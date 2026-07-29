@@ -1,4 +1,33 @@
 document.addEventListener('DOMContentLoaded', () => {
+  // Intro animation
+  const intro = document.getElementById('intro');
+  const hero = document.querySelector('.hero');
+
+  if (intro) {
+    const seenIntro = sessionStorage.getItem('aeropulseIntroSeen');
+
+    if (seenIntro) {
+      intro.classList.add('hidden');
+      if (hero) hero.classList.add('revealed');
+    } else {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          intro.classList.add('animate-out');
+          setTimeout(() => {
+            intro.classList.add('hidden');
+            sessionStorage.setItem('aeropulseIntroSeen', 'true');
+          }, 1400);
+        }, 2200);
+
+        if (hero) {
+          setTimeout(() => hero.classList.add('revealed'), 2400);
+        }
+      });
+    }
+  } else if (hero) {
+    hero.classList.add('revealed');
+  }
+
   // Mobile menu toggle
   const menuBtn = document.querySelector('.mobile-menu-btn');
   const mobileMenu = document.getElementById('mobileMenu');
