@@ -98,9 +98,9 @@ app.get('/auth/discord',
 app.get('/auth/discord/callback', (req, res, next) => {
   passport.authenticate('discord', (err, user, info) => {
     if (err) {
-      console.error('Discord OAuth error:', err);
-      const message = err.message || 'Discord authentication failed.';
-      return res.status(400).send(`<h1>Discord login failed</h1><p>${message}</p><p>Make sure the Discord redirect URI exactly matches DISCORD_CALLBACK_URL.</p><a href='/login.html'>Back to login</a>`);
+      console.error('Discord OAuth error:', err.code, err.message, err.oauthError);
+      const details = `Error code: ${err.code || 'unknown'} | Message: ${err.message || 'none'} | OAuth error: ${err.oauthError || 'none'}`;
+      return res.status(400).send(`<h1>Discord login failed</h1><p>${details}</p><p>Make sure the Discord redirect URI in https://discord.com/developers/applications exactly matches DISCORD_CALLBACK_URL: <code>${process.env.DISCORD_CALLBACK_URL || 'not set'}</code></p><a href='/login.html'>Back to login</a>`);
     }
     if (!user) {
       return res.redirect('/login.html');
