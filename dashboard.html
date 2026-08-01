@@ -75,17 +75,33 @@
           <button type="submit" class="btn btn-primary">Update Earnings</button>
         </form>
 
-        <form class="admin-form" id="equityForm">
+        <form class="admin-form" id="addOwnerForm">
           <div class="form-group">
-            <label for="equityUser">Discord User ID</label>
-            <input type="text" id="equityUser" name="userId" placeholder="123456789012345678" required>
+            <label for="ownerUserId">Discord User ID</label>
+            <input type="text" id="ownerUserId" name="userId" placeholder="123456789012345678" required>
           </div>
           <div class="form-group">
-            <label for="equityPercent">Equity %</label>
-            <input type="number" id="equityPercent" name="percent" placeholder="20" min="0" max="100" required>
+            <label for="ownerPercent">Equity % (optional, default 0)</label>
+            <input type="number" id="ownerPercent" name="percent" placeholder="20" min="0" max="100">
           </div>
-          <button type="submit" class="btn btn-primary">Set Equity</button>
+          <button type="submit" class="btn btn-primary">Add Owner</button>
         </form>
+
+        <h3 class="display" style="font-size: 1.8rem; margin: 40px 0 20px;">DJ Empire Equity Owners</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Discord User ID</th>
+                <th>Equity %</th>
+                <th>Estimated Earnings</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ownersTable">
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
@@ -114,7 +130,49 @@
         if (me.isAdmin) {
           document.getElementById('adminPanel').hidden = false;
           document.getElementById('earningsInput').value = equity.totalEarnings;
+          loadOwners();
         }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadOwners() {
+      try {
+        const res = await fetch('/api/admin/equity/list');
+        if (!res.ok) return;
+        const owners = await res.json();
+        const totalRes = await fetch('/api/equity');
+        const { totalEarnings } = await totalRes.json();
+
+        const tbody = document.getElementById('ownersTable');
+        tbody.innerHTML = '';
+
+        if (owners.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No owners yet.</td></tr>';
+          return;
+        }
+
+        for (const owner of owners) {
+          const earnings = Math.floor((totalEarnings * owner.percent) / 100);
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${owner.userId}</td>
+            <td>${owner.percent}%</td>
+            <td>${earnings.toLocaleString()} R$</td>
+            <td><button class="btn btn-secondary btn-sm" data-userid="${owner.userId}">Remove</button></td>
+          `;
+          tbody.appendChild(tr);
+        }
+
+        tbody.querySelectorAll('button[data-userid]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const userId = btn.dataset.userid;
+            await fetch(`/api/admin/owners/${userId}`, { method: 'DELETE' });
+            loadOwners();
+            loadDashboard();
+          });
+        });
       } catch (err) {
         console.error(err);
       }
@@ -133,16 +191,19 @@
       }
     });
 
-    document.getElementById('equityForm').addEventListener('submit', async (e) => {
+    document.getElementById('addOwnerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
-      const res = await fetch('/api/admin/equity', {
+      const body = { userId: form.userId.value };
+      if (form.percent.value !== '') body.percent = Number(form.percent.value);
+      const res = await fetch('/api/admin/owners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: form.userId.value, percent: form.percent.value })
+        body: JSON.stringify(body)
       });
       if (res.ok) {
         form.reset();
+        loadOwners();
         loadDashboard();
       }
     });

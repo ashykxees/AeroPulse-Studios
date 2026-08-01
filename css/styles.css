@@ -1034,3 +1034,39 @@ img {
     grid-template-columns: 1fr;
   }
 }
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.data-table th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}

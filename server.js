@@ -37,6 +37,10 @@ function saveData(data) {
   saveJSON(DATA_FILE, data);
 }
 
+function saveWhitelist(list) {
+  saveJSON(WHITELIST_FILE, list);
+}
+
 function isWhitelisted(id) {
   const list = loadWhitelist();
   return list.find(u => u.id === id);
@@ -149,6 +153,43 @@ app.get('/api/equity', ensureAuth, (req, res) => {
     totalEarnings: total,
     yourEarnings: share
   });
+});
+
+app.get('/api/admin/equity/list', ensureAdmin, (req, res) => {
+  const data = loadData();
+  const list = Object.entries(data.djEmpire?.equity || {}).map(([userId, percent]) => ({ userId, percent }));
+  res.json(list);
+});
+
+app.post('/api/admin/owners', ensureAdmin, (req, res) => {
+  const { userId, percent = 0 } = req.body;
+  const value = Number(percent);
+  if (!userId || Number.isNaN(value) || value < 0 || value > 100) {
+    return res.status(400).json({ error: 'Invalid user or percent' });
+  }
+
+  const whitelist = loadWhitelist();
+  if (!whitelist.find(u => u.id === userId)) {
+    whitelist.push({ id: userId });
+    saveWhitelist(whitelist);
+  }
+
+  const data = loadData();
+  if (!data.djEmpire.equity) data.djEmpire.equity = {};
+  data.djEmpire.equity[userId] = value;
+  saveData(data);
+
+  res.json({ success: true, equity: data.djEmpire.equity });
+});
+
+app.delete('/api/admin/owners/:userId', ensureAdmin, (req, res) => {
+  const userId = req.params.userId;
+  const data = loadData();
+  if (data.djEmpire?.equity) {
+    delete data.djEmpire.equity[userId];
+    saveData(data);
+  }
+  res.json({ success: true, equity: data.djEmpire?.equity || {} });
 });
 
 app.post('/api/admin/earnings', ensureAdmin, (req, res) => {
