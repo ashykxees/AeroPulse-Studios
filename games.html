@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Our Games | AeroPulse Studios</title>
-  <meta name="description" content="Explore the games built by AeroPulse Studios.">
+  <meta name="description" content="Games by AeroPulse Studios.">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -20,9 +20,10 @@
           <li><a href="games.html" class="active">Games</a></li>
           <li><a href="team.html">Team</a></li>
           <li><a href="contact.html">Contact</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
         </ul>
       </nav>
-      <a href="contact.html" class="nav-cta">Contact</a>
+      <a href="/dashboard" class="nav-cta">Dashboard</a>
       <button class="mobile-menu-btn" aria-label="Open menu">&#9776;</button>
     </div>
     <div class="mobile-menu" id="mobileMenu">
@@ -30,109 +31,38 @@
       <a href="games.html">Games</a>
       <a href="team.html">Team</a>
       <a href="contact.html">Contact</a>
+      <a href="/dashboard">Dashboard</a>
     </div>
   </header>
 
   <main>
-    <section class="hero" style="min-height: 50vh; padding-top: 140px;">
-      <div class="hero-bg" style="background: radial-gradient(circle at 30% 40%, rgba(34, 211, 238, 0.1), transparent 40%), linear-gradient(180deg, rgba(10, 10, 11, 0.3), var(--bg));"></div>
+    <section class="hero" style="min-height: 45vh; padding-top: 140px;">
+      <div class="hero-bg" style="background: radial-gradient(circle at 50% 40%, rgba(34, 211, 238, 0.08), transparent 45%), linear-gradient(180deg, rgba(10, 10, 11, 0.4), var(--bg));"></div>
       <div class="container">
         <span class="hero-label">Our Games</span>
-        <h1 class="display">A growing <span>universe</span> of experiences.</h1>
-        <p style="max-width: 560px; color: var(--text-muted); font-size: 1.1rem;">From live hits to what is coming next. Each game is built with original systems and player-first design.</p>
+        <h1 class="display">The next <span>empire</span> is loading.</h1>
+        <p style="max-width: 560px; color: var(--text-muted); font-size: 1.1rem;">One world at a time. The first title is on the horizon.</p>
       </div>
     </section>
 
-    <section class="section" style="padding-top: 40px;">
-      <div class="container">
-        <div class="filters">
-          <button class="filter-btn active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="live">Live</button>
-          <button class="filter-btn" data-filter="dev">In Dev</button>
-          <button class="filter-btn" data-filter="soon">Soon</button>
-          <button class="filter-btn" data-filter="archived">Archived</button>
-        </div>
-
-        <div class="card-grid" id="gamesGrid">
-          <article class="card" data-status="live">
-            <div class="card-image">
-              <img src="images/game-1.jpg" alt="Skybound Drift thumbnail">
-              <span class="card-badge">3.2M plays</span>
+    <section class="section" style="padding-top: 20px; padding-bottom: 120px;">
+      <div class="container" style="max-width: 900px;">
+        <div class="teaser-card">
+          <div class="teaser-image-wrap">
+            <img src="images/dj-empire.jpg" alt="DJ Empire teaser" class="teaser-image">
+            <div class="teaser-overlay">
+              <span class="teaser-badge">Coming Soon</span>
+              <h2 class="teaser-title display">DJ Empire</h2>
             </div>
-            <div class="card-content">
-              <h3 class="card-title">Skybound Drift</h3>
-              <div class="card-meta"><span class="rating">4.8★</span><span>Live</span></div>
-              <p class="card-desc">Master the skies in fast-paced drift races above the clouds. Customize your craft and climb the leaderboard.</p>
-              <div class="card-actions">
-                <a href="#" class="primary">Play</a>
-                <a href="#">Details</a>
-              </div>
+          </div>
+          <div class="teaser-body">
+            <p class="teaser-desc">Build your own nightclub empire, book DJs, throw sold-out events and climb the ranks of the music world. The dance floor belongs to you.</p>
+            <div class="teaser-meta">
+              <span>Genre: Simulation / Tycoon</span>
+              <span>Platform: Roblox</span>
+              <span>Status: In Development</span>
             </div>
-          </article>
-
-          <article class="card" data-status="live">
-            <div class="card-image">
-              <img src="images/game-2.jpg" alt="Neon Siege thumbnail">
-              <span class="card-badge">1.8M plays</span>
-            </div>
-            <div class="card-content">
-              <h3 class="card-title">Neon Siege</h3>
-              <div class="card-meta"><span class="rating">4.7★</span><span>Live</span></div>
-              <p class="card-desc">Tactical team battles in a glowing cyber city. Built for competitive play and regular seasons.</p>
-              <div class="card-actions">
-                <a href="#" class="primary">Play</a>
-                <a href="#">Details</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-status="dev">
-            <div class="card-image">
-              <img src="images/game-3.jpg" alt="Aether Trials thumbnail">
-              <span class="card-badge">In Dev</span>
-            </div>
-            <div class="card-content">
-              <h3 class="card-title">Aether Trials</h3>
-              <div class="card-meta"><span class="rating">Beta</span><span>In Dev</span></div>
-              <p class="card-desc">Explore floating islands and solve ancient puzzles in a shared adventure world.</p>
-              <div class="card-actions">
-                <a href="#" class="primary">Play</a>
-                <a href="#">Details</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-status="soon">
-            <div class="card-image">
-              <img src="images/game-4.jpg" alt="Pulse Racer thumbnail">
-              <span class="card-badge">Soon</span>
-            </div>
-            <div class="card-content">
-              <h3 class="card-title">Pulse Racer</h3>
-              <div class="card-meta"><span class="rating">Coming</span><span>Soon</span></div>
-              <p class="card-desc">High-speed anti-gravity racing with deep track mastery and online tournaments.</p>
-              <div class="card-actions">
-                <a href="#" class="primary">Wishlist</a>
-                <a href="#">Details</a>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-status="archived">
-            <div class="card-image">
-              <img src="images/game-1.jpg" alt="Starfall Arcade thumbnail">
-              <span class="card-badge">Archived</span>
-            </div>
-            <div class="card-content">
-              <h3 class="card-title">Starfall Arcade</h3>
-              <div class="card-meta"><span class="rating">4.5★</span><span>Archived</span></div>
-              <p class="card-desc">Our first released title. A collection of bite-sized space mini-games.</p>
-              <div class="card-actions">
-                <a href="#" class="primary">View</a>
-                <a href="#">Details</a>
-              </div>
-            </div>
-          </article>
+          </div>
         </div>
       </div>
     </section>
@@ -160,6 +90,7 @@
             <li><a href="games.html">Games</a></li>
             <li><a href="team.html">Team</a></li>
             <li><a href="contact.html">Contact</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
           </ul>
         </div>
         <div>

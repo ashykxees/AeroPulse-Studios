@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | AeroPulse Studios</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="logo" style="justify-content: center; margin-bottom: 32px;">
+        <span class="logo-icon">A</span>
+        <span>AeroPulse Studios</span>
+      </div>
+      <h1 class="display" style="text-align: center; margin-bottom: 16px;">Dashboard Access</h1>
+      <p style="text-align: center; color: var(--text-muted); margin-bottom: 32px;">Sign in with Discord to view your DJ Empire equity.</p>
+      <a href="/auth/discord" class="btn btn-primary" style="width: 100%; justify-content: center;">
+        Login with Discord
+      </a>
+      <p id="error" style="color: #f87171; text-align: center; margin-top: 16px; font-size: 0.9rem;"></p>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'not-authorized') {
+      document.getElementById('error').textContent = 'Your Discord account is not whitelisted.';
+    }
+  </script>
+</body>
+</html>

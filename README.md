@@ -1,41 +1,54 @@
 # AeroPulse Studios
 
-A static website for AeroPulse Studios, an independent game studio.
+A static website for AeroPulse Studios, an independent game studio, with a Discord-OAuth equity dashboard.
 
 ## Pages
 
-- **Home** (`index.html`) — studio introduction and featured games
-- **Games** (`games.html`) — full game catalog with thumbnails and status filters
-- **Team** (`team.html`) — leadership team with Discord profile pictures
-- **Contact** (`contact.html`) — contact form and inquiry options
+- **Home** (`index.html`) — studio introduction with intro animation
+- **Games** (`games.html`) — DJ Empire teaser
+- **Team** (`team.html`) — leadership, management and development team
+- **Contact** (`contact.html`) — contact form
+- **Dashboard** (`/dashboard`) — Discord-login equity view for DJ Empire
 
-## Structure
+## Setup
 
-```
-AeroPulse-Studios/
-├── index.html
-├── games.html
-├── team.html
-├── contact.html
-├── css/
-│   └── styles.css
-├── js/
-│   └── main.js
-└── images/
-    ├── hero-bg.jpg
-    ├── game-1.jpg ... game-4.jpg
-    ├── team-ceo.png
-    └── team-coo.png
-```
-
-## Local Development
-
-Open any `.html` file in a browser, or run a local server:
+1. Install dependencies:
 
 ```bash
-python3 -m http.server 8000
+npm install
 ```
 
-## Deployment
+2. Copy `.env.example` to `.env` and fill in your Discord OAuth app credentials:
 
-The site is static and can be deployed to GitHub Pages by enabling Pages from the `main` branch root.
+```bash
+cp .env.example .env
+```
+
+3. Start the server:
+
+```bash
+npm start
+```
+
+The site runs on `http://localhost:3000`.
+
+## Discord OAuth
+
+Create a Discord application at https://discord.com/developers/applications and set:
+
+- Redirect URI: `http://localhost:3000/auth/discord/callback`
+- Client ID and Client Secret into `.env`
+
+## Equity Dashboard
+
+- Whitelisted Discord users log in via Discord OAuth.
+- The admin (CEO, Discord ID `1440014645783035934`) can submit total DJ Empire earnings and assign user equity percentages.
+- Each user sees their own equity % and calculated R$ earnings.
+
+## Files
+
+- `server.js` — Express server, Discord OAuth and equity API
+- `whitelist.json` — list of allowed Discord user IDs
+- `data.json` — runtime earnings/equity data (created at runtime, gitignored)
+- `css/styles.css` — shared styles
+- `js/main.js` — mobile menu, game filters, intro animation
