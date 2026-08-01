@@ -113,7 +113,7 @@ app.get('/auth/discord/callback', (req, res, next) => {
       if (loginErr) return next(loginErr);
       if (!isWhitelisted(user.id)) {
         req.logout(() => {});
-        return res.redirect('/login.html?error=not-authorized');
+        return res.redirect('/index.html?error=not-whitelisted');
       }
       res.redirect('/dashboard');
     });

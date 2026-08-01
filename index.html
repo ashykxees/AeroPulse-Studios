@@ -14,6 +14,10 @@
     <div class="intro-bar"><span></span></div>
   </div>
 
+  <div id="notWhitelisted" class="banner banner-error" hidden>
+    Your Discord account is not whitelisted for the dashboard.
+  </div>
+
   <header class="header">
     <div class="container">
       <a href="index.html" class="logo">
@@ -169,5 +173,11 @@
   </footer>
 
   <script src="js/main.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'not-whitelisted') {
+      document.getElementById('notWhitelisted').hidden = false;
+    }
+  </script>
 </body>
 </html>
