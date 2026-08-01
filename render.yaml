@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: aeropulse-studios
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_CALLBACK_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PORT
+        value: "3000"
