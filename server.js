@@ -95,15 +95,26 @@ app.get('/auth/discord',
   passport.authenticate('discord', { scope: ['identify'] }),
   (req, res) => { res.send('Redirecting to Discord...'); });
 
-app.get('/auth/discord/callback',
-  passport.authenticate('discord', { failureRedirect: '/login.html' }),
-  (req, res) => {
-    if (!isWhitelisted(req.user.id)) {
-      req.logout(() => {});
-      return res.redirect('/login.html?error=not-authorized');
+app.get('/auth/discord/callback', (req, res, next) => {
+  passport.authenticate('discord', (err, user, info) => {
+    if (err) {
+      console.error('Discord OAuth error:', err);
+      const message = err.message || 'Discord authentication failed.';
+      return res.status(400).send(`<h1>Discord login failed</h1><p>${message}</p><p>Make sure the Discord redirect URI exactly matches DISCORD_CALLBACK_URL.</p><a href='/login.html'>Back to login</a>`);
     }
-    res.redirect('/dashboard');
-  });
+    if (!user) {
+      return res.redirect('/login.html');
+    }
+    req.login(user, loginErr => {
+      if (loginErr) return next(loginErr);
+      if (!isWhitelisted(user.id)) {
+        req.logout(() => {});
+        return res.redirect('/login.html?error=not-authorized');
+      }
+      res.redirect('/dashboard');
+    });
+  })(req, res, next);
+});
 
 app.get('/auth/logout', (req, res, next) => {
   req.logout(err => {
