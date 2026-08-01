@@ -64,6 +64,17 @@ fly deploy
 
 Set the same environment variables in the Fly dashboard or with `fly secrets set`.
 
+### Railway
+
+1. Go to https://railway.app/ and create a new project from GitHub.
+2. Connect the `ashykxees/AeroPulse-Studios` repo.
+3. Add environment variables in Railway:
+   - `DISCORD_CLIENT_ID`
+   - `DISCORD_CLIENT_SECRET`
+   - `DISCORD_CALLBACK_URL` (e.g. `https://your-project.up.railway.app/auth/discord/callback`)
+   - `SESSION_SECRET` (any random string)
+4. Update your Discord app's redirect URI to match the Railway URL.
+
 ## Equity Dashboard
 
 - Whitelisted Discord users log in via Discord OAuth.
