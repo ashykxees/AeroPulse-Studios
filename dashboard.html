@@ -64,11 +64,28 @@
         <div class="dashboard-card">
           <h3>Your Earnings</h3>
           <div class="value accent" id="yourEarnings">0 R$</div>
+          <div id="payoutStatus" class="payout-status" hidden></div>
+          <button id="requestPayoutBtn" class="btn btn-primary btn-sm" hidden>Request Payout</button>
         </div>
       </div>
 
       <div class="admin-panel" id="adminPanel" hidden>
         <h2 class="display">Admin Controls</h2>
+
+        <h3 class="display" style="font-size: 1.8rem; margin: 20px 0 10px;">Payout Requests</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="payoutsTable">
+            </tbody>
+          </table>
+        </div>
 
         <form class="admin-form" id="earningsForm">
           <div class="form-group">
@@ -132,10 +149,22 @@
         document.getElementById('totalEarnings').textContent = equity.totalEarnings.toLocaleString() + ' R$';
         document.getElementById('yourEarnings').textContent = equity.yourEarnings.toLocaleString() + ' R$';
 
+        const payoutBtn = document.getElementById('requestPayoutBtn');
+        const payoutStatus = document.getElementById('payoutStatus');
+        if (equity.yourEarnings > 0) {
+          payoutBtn.hidden = false;
+          payoutStatus.hidden = true;
+        } else {
+          payoutBtn.hidden = true;
+          payoutStatus.hidden = false;
+          payoutStatus.textContent = equity.yourEarnings === 0 && equity.equity > 0 ? 'No earnings to request.' : '';
+        }
+
         if (me.isAdmin) {
           document.getElementById('adminPanel').hidden = false;
           document.getElementById('earningsInput').value = equity.totalEarnings;
           loadOwners();
+          loadPayouts();
         }
       } catch (err) {
         console.error(err);
@@ -163,7 +192,7 @@
         }
 
         for (const owner of owners) {
-          const earnings = Math.floor((totalEarnings * owner.percent) / 100);
+          const earnings = owner.earnings ?? Math.floor((totalEarnings * owner.percent) / 100);
           const username = owner.user?.username || owner.userId;
           const avatar = owner.user?.avatar || defaultAvatar(owner.userId);
           const tr = document.createElement('tr');
@@ -200,6 +229,48 @@
             document.getElementById('ownerUserId').readOnly = true;
             document.getElementById('addOwnerForm').querySelector('button[type="submit"]').textContent = 'Save Owner';
             document.getElementById('ownerPercent').focus();
+          });
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadPayouts() {
+      try {
+        const res = await fetch('/api/admin/payouts');
+        if (!res.ok) return;
+        const requests = await res.json();
+        const tbody = document.getElementById('payoutsTable');
+        tbody.innerHTML = '';
+
+        if (requests.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No pending requests.</td></tr>';
+          return;
+        }
+
+        for (const request of requests) {
+          const username = request.user?.username || request.userId;
+          const avatar = request.user?.avatar || defaultAvatar(request.userId);
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>
+              <div class="owner-cell">
+                <img src="${avatar}" alt="" class="owner-avatar" onerror="this.src='${defaultAvatar(request.userId)}'">
+                <span>${username}</span>
+              </div>
+            </td>
+            <td>${request.amount.toLocaleString()} R$</td>
+            <td><button class="btn btn-primary btn-sm" data-action="pay" data-userid="${request.userId}">Mark Paid</button></td>
+          `;
+          tbody.appendChild(tr);
+        }
+
+        tbody.querySelectorAll('button[data-action="pay"]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            await fetch(`/api/admin/payouts/${btn.dataset.userid}/pay`, { method: 'POST' });
+            loadPayouts();
+            loadOwners();
           });
         });
       } catch (err) {
@@ -255,6 +326,18 @@
         const data = await res.json().catch(() => ({}));
         errorEl.textContent = data.error || 'Failed to add owner.';
         errorEl.hidden = false;
+      }
+    });
+
+    document.getElementById('requestPayoutBtn').addEventListener('click', async () => {
+      const res = await fetch('/api/payout/request');
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Payout request for ${data.amount.toLocaleString()} R$ sent.`);
+        loadDashboard();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Could not request payout.');
       }
     });
 

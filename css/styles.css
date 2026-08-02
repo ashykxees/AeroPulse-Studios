@@ -602,6 +602,16 @@ img {
   background: var(--surface-2);
 }
 
+.payout-status {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.dashboard-card .btn-sm {
+  margin-top: 14px;
+}
+
 .checkbox {
   display: flex;
   align-items: flex-start;
