@@ -16,11 +16,10 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
 const WHITELIST_FILE = path.join(DATA_DIR, 'whitelist.json');
 const WHITELIST_TEMPLATE = path.join(__dirname, 'whitelist.json');
-if (!fs.existsSync(WHITELIST_FILE) && fs.existsSync(WHITELIST_TEMPLATE)) {
-  fs.copyFileSync(WHITELIST_TEMPLATE, WHITELIST_FILE);
-}
 
 const discordUserCache = new Map();
+let state = null;
+let pool = null;
 
 function loadJSON(file) {
   try {
@@ -34,22 +33,80 @@ function saveJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
+function ensureDataShape(data) {
+  if (!data.djEmpire) data.djEmpire = { totalEarnings: 0, equity: {}, paidOutEarnings: {}, payoutRequests: [] };
+  if (!data.djEmpire.paidOutEarnings) data.djEmpire.paidOutEarnings = {};
+  if (!data.djEmpire.payoutRequests) data.djEmpire.payoutRequests = [];
+}
+
+function readWhitelist(file) {
+  const val = loadJSON(file);
+  return Array.isArray(val) ? val : [];
+}
+
+async function persistDB() {
+  if (!pool) return;
+  await Promise.all([
+    pool.query("INSERT INTO app_state (key, value) VALUES ('data', $1) ON CONFLICT (key) DO UPDATE SET value=$1", [JSON.stringify(state.data)]),
+    pool.query("INSERT INTO app_state (key, value) VALUES ('whitelist', $1) ON CONFLICT (key) DO UPDATE SET value=$1", [JSON.stringify(state.whitelist)])
+  ]);
+}
+
+async function persistJSON() {
+  saveJSON(DATA_FILE, state.data);
+  saveJSON(WHITELIST_FILE, state.whitelist);
+}
+
+async function initStorage() {
+  if (process.env.DATABASE_URL) {
+    try {
+      const { Pool } = require('pg');
+      pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+      await pool.query(`CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value JSONB NOT NULL)`);
+      const [dataRow, whitelistRow] = await Promise.all([
+        pool.query("SELECT value FROM app_state WHERE key='data'"),
+        pool.query("SELECT value FROM app_state WHERE key='whitelist'")
+      ]);
+      const data = dataRow.rows[0]?.value || {};
+      ensureDataShape(data);
+      const whitelist = whitelistRow.rows[0]?.value || readWhitelist(WHITELIST_TEMPLATE);
+      state = { data, whitelist, persist: persistDB };
+      console.log('Postgres storage initialized');
+      return;
+    } catch (err) {
+      console.error('Postgres init failed, falling back to JSON files:', err.message);
+      pool = null;
+    }
+  }
+
+  const data = loadJSON(DATA_FILE);
+  ensureDataShape(data);
+  const existingWhitelist = readWhitelist(WHITELIST_FILE);
+  const templateWhitelist = readWhitelist(WHITELIST_TEMPLATE);
+  const whitelist = existingWhitelist.length ? existingWhitelist : templateWhitelist;
+  state = { data, whitelist, persist: persistJSON };
+  if (!existingWhitelist.length && fs.existsSync(WHITELIST_TEMPLATE)) {
+    fs.copyFileSync(WHITELIST_TEMPLATE, WHITELIST_FILE);
+  }
+  console.log('JSON file storage initialized');
+}
+
 function loadWhitelist() {
-  return loadJSON(WHITELIST_FILE);
+  return state.whitelist;
 }
 
 function loadData() {
-  const data = loadJSON(DATA_FILE);
-  if (!data.djEmpire) {
-    data.djEmpire = { totalEarnings: 0, equity: {}, paidOutEarnings: {}, payoutRequests: [] };
-  }
-  if (!data.djEmpire.paidOutEarnings) data.djEmpire.paidOutEarnings = {};
-  if (!data.djEmpire.payoutRequests) data.djEmpire.payoutRequests = [];
-  return data;
+  return state.data;
 }
 
-function saveData(data) {
-  saveJSON(DATA_FILE, data);
+async function saveData(data) {
+  state.data = data;
+  await state.persist();
+}
+
+async function saveWhitelist(list) {
+  state.whitelist = list;
+  await state.persist();
 }
 
 function getBotToken() {
@@ -268,7 +325,7 @@ app.get('/api/admin/equity/list', ensureAdmin, async (req, res) => {
   res.json(enriched);
 });
 
-app.post('/api/admin/owners', ensureAdmin, (req, res) => {
+app.post('/api/admin/owners', ensureAdmin, async (req, res) => {
   const { userId, percent = 0 } = req.body;
   const value = Number(percent);
   if (!userId || Number.isNaN(value) || value < 0 || value > 100) {
@@ -278,28 +335,28 @@ app.post('/api/admin/owners', ensureAdmin, (req, res) => {
   const whitelist = loadWhitelist();
   if (!whitelist.find(u => u.id === userId)) {
     whitelist.push({ id: userId });
-    saveWhitelist(whitelist);
+    await saveWhitelist(whitelist);
   }
 
   const data = loadData();
   if (!data.djEmpire.equity) data.djEmpire.equity = {};
   data.djEmpire.equity[userId] = value;
-  saveData(data);
+  await saveData(data);
 
   res.json({ success: true, equity: data.djEmpire.equity });
 });
 
-app.delete('/api/admin/owners/:userId', ensureAdmin, (req, res) => {
+app.delete('/api/admin/owners/:userId', ensureAdmin, async (req, res) => {
   const userId = req.params.userId;
   const data = loadData();
   if (data.djEmpire?.equity) {
     delete data.djEmpire.equity[userId];
-    saveData(data);
+    await saveData(data);
   }
   res.json({ success: true, equity: data.djEmpire?.equity || {} });
 });
 
-app.post('/api/admin/earnings', ensureAdmin, (req, res) => {
+app.post('/api/admin/earnings', ensureAdmin, async (req, res) => {
   const { amount } = req.body;
   const value = Number(amount);
   if (Number.isNaN(value) || value < 0) {
@@ -307,11 +364,11 @@ app.post('/api/admin/earnings', ensureAdmin, (req, res) => {
   }
   const data = loadData();
   data.djEmpire.totalEarnings = value;
-  saveData(data);
+  await saveData(data);
   res.json({ success: true, totalEarnings: value });
 });
 
-app.post('/api/admin/equity', ensureAdmin, (req, res) => {
+app.post('/api/admin/equity', ensureAdmin, async (req, res) => {
   const { userId, percent } = req.body;
   const value = Number(percent);
   if (!userId || Number.isNaN(value) || value < 0 || value > 100) {
@@ -320,7 +377,7 @@ app.post('/api/admin/equity', ensureAdmin, (req, res) => {
   const data = loadData();
   if (!data.djEmpire.equity) data.djEmpire.equity = {};
   data.djEmpire.equity[userId] = value;
-  saveData(data);
+  await saveData(data);
   res.json({ success: true, equity: data.djEmpire.equity });
 });
 
@@ -338,7 +395,7 @@ app.get('/api/payout/request', ensureAuth, async (req, res) => {
   } else {
     data.djEmpire.payoutRequests.push({ userId: req.user.id, amount, status: 'pending', requestedAt: Date.now() });
   }
-  saveData(data);
+  await saveData(data);
 
   const admin = loadWhitelist().find(u => u.role === 'admin');
   if (admin) {
@@ -359,7 +416,7 @@ app.get('/api/admin/payouts', ensureAdmin, async (req, res) => {
   res.json(enriched);
 });
 
-app.post('/api/admin/payouts/:userId/pay', ensureAdmin, (req, res) => {
+app.post('/api/admin/payouts/:userId/pay', ensureAdmin, async (req, res) => {
   const userId = req.params.userId;
   const data = loadData();
   const request = data.djEmpire.payoutRequests.find(r => r.userId === userId && r.status === 'pending');
@@ -371,7 +428,7 @@ app.post('/api/admin/payouts/:userId/pay', ensureAdmin, (req, res) => {
   data.djEmpire.paidOutEarnings[userId] = paidOut + request.amount;
   request.status = 'paid';
   request.paidAt = Date.now();
-  saveData(data);
+  await saveData(data);
 
   res.json({ success: true, paidOut: data.djEmpire.paidOutEarnings[userId] });
 });
@@ -406,7 +463,12 @@ app.get('/dashboard', ensureAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`AeroPulse server running on http://localhost:${PORT}`);
-  console.log(`Data directory: ${DATA_DIR}`);
-});
+async function start() {
+  await initStorage();
+  app.listen(PORT, () => {
+    console.log(`AeroPulse server running on http://localhost:${PORT}`);
+    console.log(`Data directory: ${DATA_DIR}`);
+  });
+}
+
+start();
