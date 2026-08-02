@@ -363,9 +363,9 @@ app.post('/api/admin/earnings', ensureAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Invalid amount' });
   }
   const data = loadData();
-  data.djEmpire.totalEarnings = value;
+  data.djEmpire.totalEarnings = (data.djEmpire.totalEarnings || 0) + value;
   await saveData(data);
-  res.json({ success: true, totalEarnings: value });
+  res.json({ success: true, totalEarnings: data.djEmpire.totalEarnings });
 });
 
 app.post('/api/admin/equity', ensureAdmin, async (req, res) => {

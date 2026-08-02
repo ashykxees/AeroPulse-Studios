@@ -89,11 +89,11 @@
 
         <form class="admin-form" id="earningsForm">
           <div class="form-group">
-            <label for="earningsInput">Total DJ Empire Earnings (R$)</label>
+            <label for="earningsInput">Add DJ Empire Earnings (R$)</label>
             <input type="number" id="earningsInput" name="amount" placeholder="20000" min="0" required>
           </div>
           <div></div>
-          <button type="submit" class="btn btn-primary">Update Earnings</button>
+          <button type="submit" class="btn btn-primary">Add Earnings</button>
         </form>
 
         <form class="admin-form" id="addOwnerForm">
@@ -287,6 +287,7 @@
         body: JSON.stringify({ amount: form.amount.value })
       });
       if (res.ok) {
+        form.reset();
         loadDashboard();
       }
     });
