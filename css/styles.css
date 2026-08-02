@@ -846,14 +846,18 @@ img {
 .intro-logo {
   width: 100px;
   height: 100px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: transparent;
   border-radius: 24px;
   display: grid;
   place-items: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 4rem;
-  color: var(--bg);
   animation: introPulse 2s ease-in-out infinite;
+}
+
+.intro-logo img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.3));
 }
 
 .intro-text {
