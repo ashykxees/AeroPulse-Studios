@@ -10,8 +10,16 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DATA_FILE = path.join(__dirname, 'data.json');
-const WHITELIST_FILE = path.join(__dirname, 'whitelist.json');
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const WHITELIST_FILE = path.join(DATA_DIR, 'whitelist.json');
+const WHITELIST_TEMPLATE = path.join(__dirname, 'whitelist.json');
+if (!fs.existsSync(WHITELIST_FILE) && fs.existsSync(WHITELIST_TEMPLATE)) {
+  fs.copyFileSync(WHITELIST_TEMPLATE, WHITELIST_FILE);
+}
+
 const discordUserCache = new Map();
 
 function loadJSON(file) {
