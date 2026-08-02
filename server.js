@@ -10,7 +10,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || process.env.DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
@@ -408,4 +408,5 @@ app.get('/dashboard', ensureAuth, (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`AeroPulse server running on http://localhost:${PORT}`);
+  console.log(`Data directory: ${DATA_DIR}`);
 });
