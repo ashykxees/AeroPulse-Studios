@@ -65,25 +65,59 @@ async function sendDiscordDM(userId, message) {
   }
 }
 
-async function fetchDiscordUser(userId) {
-  if (discordUserCache.has(userId)) return discordUserCache.get(userId);
-  const token = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_CLIENT_SECRET;
-  if (!token) return null;
+function parseDiscordDogMeta(html) {
+  const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+  const imageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
+  if (!titleMatch) return null;
+  return {
+    username: titleMatch[1].replace(' | Discord', '').trim(),
+    avatar: imageMatch ? imageMatch[1] : null
+  };
+}
+
+async function fetchDiscordDogUser(userId) {
   try {
-    const res = await fetch(`https://discord.com/api/v10/users/${userId}`, {
-      headers: { Authorization: `Bot ${token}` }
-    });
+    const res = await fetch(`https://discord.dog/${userId}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (!res.ok) return null;
-    const data = await res.json();
-    const avatar = data.avatar
-      ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png?size=128`
-      : `https://cdn.discordapp.com/embed/avatars/${(BigInt(data.id) >> 22n) % 6n}.png`;
-    const user = { id: data.id, username: data.username, avatar };
-    discordUserCache.set(userId, user);
-    return user;
+    const html = await res.text();
+    const meta = parseDiscordDogMeta(html);
+    if (!meta) return null;
+    return {
+      id: userId,
+      username: meta.username,
+      avatar: meta.avatar || `https://cdn.discordapp.com/embed/avatars/${(BigInt(userId) >> 22n) % 6n}.png`
+    };
   } catch {
     return null;
   }
+}
+
+async function fetchDiscordUser(userId) {
+  if (discordUserCache.has(userId)) return discordUserCache.get(userId);
+
+  const token = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_CLIENT_SECRET;
+  if (token) {
+    try {
+      const res = await fetch(`https://discord.com/api/v10/users/${userId}`, {
+        headers: { Authorization: `Bot ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const avatar = data.avatar
+          ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png?size=128`
+          : `https://cdn.discordapp.com/embed/avatars/${(BigInt(data.id) >> 22n) % 6n}.png`;
+        const user = { id: data.id, username: data.username, avatar };
+        discordUserCache.set(userId, user);
+        return user;
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  const fallback = await fetchDiscordDogUser(userId);
+  if (fallback) discordUserCache.set(userId, fallback);
+  return fallback;
 }
 
 function saveWhitelist(list) {
