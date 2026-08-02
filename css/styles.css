@@ -1297,6 +1297,11 @@ img {
   line-height: 1.6;
 }
 
+.task-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 #taskAssignee {
   background: var(--surface-2);
   color: var(--text);

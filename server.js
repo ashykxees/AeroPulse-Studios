@@ -70,8 +70,17 @@ async function initStorage() {
       ]);
       const data = dataRow.rows[0]?.value || {};
       ensureDataShape(data);
-      const whitelist = whitelistRow.rows[0]?.value || readWhitelist(WHITELIST_TEMPLATE);
+      const templateWhitelist = readWhitelist(WHITELIST_TEMPLATE);
+      const whitelist = whitelistRow.rows[0]?.value || templateWhitelist;
+      // Merge role updates from the repo template without overwriting other changes
+      for (const templateUser of templateWhitelist) {
+        const existing = whitelist.find(u => u.id === templateUser.id);
+        if (existing && templateUser.role && !existing.role) {
+          existing.role = templateUser.role;
+        }
+      }
       state = { data, whitelist, persist: persistDB };
+      await state.persist();
       console.log('Postgres storage initialized');
       return;
     } catch (err) {
@@ -85,7 +94,15 @@ async function initStorage() {
   const existingWhitelist = readWhitelist(WHITELIST_FILE);
   const templateWhitelist = readWhitelist(WHITELIST_TEMPLATE);
   const whitelist = existingWhitelist.length ? existingWhitelist : templateWhitelist;
+  // Merge role updates from the repo template without overwriting other changes
+  for (const templateUser of templateWhitelist) {
+    const existing = whitelist.find(u => u.id === templateUser.id);
+    if (existing && templateUser.role && !existing.role) {
+      existing.role = templateUser.role;
+    }
+  }
   state = { data, whitelist, persist: persistJSON };
+  await state.persist();
   if (!existingWhitelist.length && fs.existsSync(WHITELIST_TEMPLATE)) {
     fs.copyFileSync(WHITELIST_TEMPLATE, WHITELIST_FILE);
   }
@@ -468,10 +485,10 @@ app.post('/api/admin/payouts/:userId/pay', ensureAdmin, async (req, res) => {
 
 // Tasks
 app.get('/api/admin/tasks/users', ensureManager, async (req, res) => {
-  const list = loadWhitelist().filter(u => u.role);
+  const list = loadWhitelist();
   const enriched = await Promise.all(list.map(async (u) => {
     const user = await fetchDiscordUser(u.id);
-    return { id: u.id, username: user?.username || u.id, role: u.role, avatar: user?.avatar };
+    return { id: u.id, username: user?.username || u.id, role: u.role || 'user', avatar: user?.avatar };
   }));
   res.json(enriched);
 });

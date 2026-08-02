@@ -396,7 +396,10 @@
           card.className = 'task-card';
           card.innerHTML = `
             <div class="task-header">
-              <h4 class="task-title">${task.title}</h4>
+              <div>
+                <h4 class="task-title">${task.title}</h4>
+                <span class="task-hint">Click me to view details</span>
+              </div>
               <button class="btn btn-primary btn-sm" data-action="complete" data-id="${task.id}">Complete</button>
             </div>
             <div class="task-body">
@@ -405,7 +408,7 @@
             </div>
           `;
           card.querySelector('.task-header').addEventListener('click', (e) => {
-            if (e.target.closest('button')) return;
+            if (e.target.closest?.('button')) return;
             card.classList.toggle('open');
           });
           card.querySelector('button[data-action="complete"]').addEventListener('click', async (e) => {
