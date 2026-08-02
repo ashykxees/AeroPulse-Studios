@@ -52,8 +52,16 @@ function saveData(data) {
   saveJSON(DATA_FILE, data);
 }
 
+function getBotToken() {
+  if (process.env.DISCORD_BOT_TOKEN) return process.env.DISCORD_BOT_TOKEN;
+  const secret = process.env.DISCORD_CLIENT_SECRET;
+  // Bot tokens have 3 dot-separated parts; OAuth client secrets do not.
+  if (secret && secret.split('.').length === 3) return secret;
+  return null;
+}
+
 async function sendDiscordDM(userId, message) {
-  const token = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_CLIENT_SECRET;
+  const token = getBotToken();
   if (!token) return;
   try {
     const dmRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
@@ -75,12 +83,10 @@ async function sendDiscordDM(userId, message) {
 
 function parseDiscordDogMeta(html) {
   const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
-  const imageMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i);
   if (!titleMatch) return null;
-  return {
-    username: titleMatch[1].replace(' | Discord', '').trim(),
-    avatar: imageMatch ? imageMatch[1] : null
-  };
+  const title = titleMatch[1].replace(' | Discord', '').trim();
+  if (/private|unknown|not found|hidden/i.test(title)) return null;
+  return { username: title };
 }
 
 async function fetchDiscordDogUser(userId) {
@@ -93,7 +99,7 @@ async function fetchDiscordDogUser(userId) {
     return {
       id: userId,
       username: meta.username,
-      avatar: meta.avatar || `https://cdn.discordapp.com/embed/avatars/${(BigInt(userId) >> 22n) % 6n}.png`
+      avatar: `https://cdn.discordapp.com/embed/avatars/${(BigInt(userId) >> 22n) % 6n}.png`
     };
   } catch {
     return null;
@@ -103,7 +109,7 @@ async function fetchDiscordDogUser(userId) {
 async function fetchDiscordUser(userId) {
   if (discordUserCache.has(userId)) return discordUserCache.get(userId);
 
-  const token = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_CLIENT_SECRET;
+  const token = getBotToken();
   if (token) {
     try {
       const res = await fetch(`https://discord.com/api/v10/users/${userId}`, {
