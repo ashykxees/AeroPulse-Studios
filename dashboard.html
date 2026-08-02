@@ -9,16 +9,16 @@
 <body>
   <header class="header">
     <div class="container">
-      <a href="index.html" class="logo">
+      <a href="/landing" class="logo">
         <span class="logo-icon">A</span>
         <span>AeroPulse Studios</span>
       </a>
       <nav>
         <ul class="nav-links">
-          <li><a href="index.html">Home</a></li>
-          <li><a href="games.html">Games</a></li>
-          <li><a href="team.html">Team</a></li>
-          <li><a href="contact.html">Contact</a></li>
+          <li><a href="/landing">Home</a></li>
+          <li><a href="/games">Games</a></li>
+          <li><a href="/team">Team</a></li>
+          <li><a href="/contact">Contact</a></li>
           <li><a href="/dashboard" class="active">Dashboard</a></li>
         </ul>
       </nav>
@@ -26,10 +26,10 @@
       <button class="mobile-menu-btn" aria-label="Open menu">&#9776;</button>
     </div>
     <div class="mobile-menu" id="mobileMenu">
-      <a href="index.html">Home</a>
-      <a href="games.html">Games</a>
-      <a href="team.html">Team</a>
-      <a href="contact.html">Contact</a>
+      <a href="/landing">Home</a>
+      <a href="/games">Games</a>
+      <a href="/team">Team</a>
+      <a href="/contact">Contact</a>
       <a href="/dashboard">Dashboard</a>
       <a href="/auth/logout">Logout</a>
     </div>
@@ -115,7 +115,7 @@
     async function loadDashboard() {
       try {
         const [meRes, equityRes] = await Promise.all([fetch('/api/me'), fetch('/api/equity')]);
-        if (!meRes.ok) return window.location.href = '/login.html';
+        if (!meRes.ok) return window.location.href = '//login';
 
         const me = await meRes.json();
         const equity = await equityRes.json();

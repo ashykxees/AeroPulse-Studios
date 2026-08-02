@@ -53,7 +53,7 @@ function isAdmin(id) {
 
 function ensureAuth(req, res, next) {
   if (req.isAuthenticated() && isWhitelisted(req.user.id)) return next();
-  res.redirect('/login.html');
+  res.redirect('/login');
 }
 
 function ensureAdmin(req, res, next) {
@@ -104,16 +104,16 @@ app.get('/auth/discord/callback', (req, res, next) => {
     if (err) {
       console.error('Discord OAuth error:', err.code, err.message, err.oauthError);
       const details = `Error code: ${err.code || 'unknown'} | Message: ${err.message || 'none'} | OAuth error: ${err.oauthError || 'none'}`;
-      return res.status(400).send(`<h1>Discord login failed</h1><p>${details}</p><p>Make sure the Discord redirect URI in https://discord.com/developers/applications exactly matches DISCORD_CALLBACK_URL: <code>${process.env.DISCORD_CALLBACK_URL || 'not set'}</code></p><a href='/login.html'>Back to login</a>`);
+      return res.status(400).send(`<h1>Discord login failed</h1><p>${details}</p><p>Make sure the Discord redirect URI in https://discord.com/developers/applications exactly matches DISCORD_CALLBACK_URL: <code>${process.env.DISCORD_CALLBACK_URL || 'not set'}</code></p><a href='/login'>Back to login</a>`);
     }
     if (!user) {
-      return res.redirect('/login.html');
+      return res.redirect('/login');
     }
     req.login(user, loginErr => {
       if (loginErr) return next(loginErr);
       if (!isWhitelisted(user.id)) {
         req.logout(() => {});
-        return res.redirect('/index.html?error=not-whitelisted');
+        return res.redirect('/landing?error=not-whitelisted');
       }
       res.redirect('/dashboard');
     });
@@ -215,6 +215,30 @@ app.post('/api/admin/equity', ensureAdmin, (req, res) => {
   data.djEmpire.equity[userId] = value;
   saveData(data);
   res.json({ success: true, equity: data.djEmpire.equity });
+});
+
+app.get('/landing', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/games', (req, res) => res.sendFile(path.join(__dirname, 'games.html')));
+app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'team.html')));
+app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'contact.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
+
+app.get('/', (req, res) => res.redirect('/landing'));
+
+app.use((req, res, next) => {
+  if (req.path.endsWith('.html')) {
+    const clean = req.path.replace(/\.html$/, '');
+    const map = {
+      '/index': '/landing',
+      '/login': '/login',
+      '/games': '/games',
+      '/team': '/team',
+      '/contact': '/contact',
+      '/dashboard': '/dashboard'
+    };
+    return res.redirect(301, map[clean] || clean);
+  }
+  next();
 });
 
 app.use(express.static(path.join(__dirname)));
