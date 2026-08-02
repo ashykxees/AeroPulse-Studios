@@ -588,6 +588,20 @@ img {
   margin-top: 12px;
 }
 
+.owner-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.owner-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
 .checkbox {
   display: flex;
   align-items: flex-start;

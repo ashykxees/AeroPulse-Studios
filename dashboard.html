@@ -142,6 +142,10 @@
       }
     }
 
+    function defaultAvatar(userId) {
+      return `https://cdn.discordapp.com/embed/avatars/${(BigInt(userId) >> 22n) % 6n}.png`;
+    }
+
     async function loadOwners() {
       try {
         const res = await fetch('/api/admin/equity/list');
@@ -160,22 +164,42 @@
 
         for (const owner of owners) {
           const earnings = Math.floor((totalEarnings * owner.percent) / 100);
+          const username = owner.user?.username || owner.userId;
+          const avatar = owner.user?.avatar || defaultAvatar(owner.userId);
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${owner.userId}</td>
-            <td>${owner.percent}%</td>
+            <td>
+              <div class="owner-cell">
+                <img src="${avatar}" alt="" class="owner-avatar" onerror="this.src='${defaultAvatar(owner.userId)}'">
+                <span>${username}</span>
+              </div>
+            </td>
+            <td class="owner-percent">${owner.percent}%</td>
             <td>${earnings.toLocaleString()} R$</td>
-            <td><button class="btn btn-secondary btn-sm" data-userid="${owner.userId}">Remove</button></td>
+            <td>
+              <button class="btn btn-secondary btn-sm" data-action="edit" data-userid="${owner.userId}" data-percent="${owner.percent}">Edit</button>
+              <button class="btn btn-secondary btn-sm" data-action="remove" data-userid="${owner.userId}">Remove</button>
+            </td>
           `;
           tbody.appendChild(tr);
         }
 
-        tbody.querySelectorAll('button[data-userid]').forEach(btn => {
+        tbody.querySelectorAll('button[data-action="remove"]').forEach(btn => {
           btn.addEventListener('click', async () => {
-            const userId = btn.dataset.userid;
-            await fetch(`/api/admin/owners/${userId}`, { method: 'DELETE' });
+            if (!confirm('Remove this owner?')) return;
+            await fetch(`/api/admin/owners/${btn.dataset.userid}`, { method: 'DELETE' });
             loadOwners();
             loadDashboard();
+          });
+        });
+
+        tbody.querySelectorAll('button[data-action="edit"]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.getElementById('ownerUserId').value = btn.dataset.userid;
+            document.getElementById('ownerPercent').value = btn.dataset.percent;
+            document.getElementById('ownerUserId').readOnly = true;
+            document.getElementById('addOwnerForm').querySelector('button[type="submit"]').textContent = 'Save Owner';
+            document.getElementById('ownerPercent').focus();
           });
         });
       } catch (err) {
@@ -223,6 +247,8 @@
       });
       if (res.ok) {
         form.reset();
+        document.getElementById('ownerUserId').readOnly = false;
+        form.querySelector('button[type="submit"]').textContent = 'Add Owner';
         await loadOwners();
         loadDashboard();
       } else {

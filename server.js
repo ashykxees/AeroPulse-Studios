@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 const DATA_FILE = path.join(__dirname, 'data.json');
 const WHITELIST_FILE = path.join(__dirname, 'whitelist.json');
+const discordUserCache = new Map();
 
 function loadJSON(file) {
   try {
@@ -39,6 +40,27 @@ function loadData() {
 
 function saveData(data) {
   saveJSON(DATA_FILE, data);
+}
+
+async function fetchDiscordUser(userId) {
+  if (discordUserCache.has(userId)) return discordUserCache.get(userId);
+  const token = process.env.DISCORD_BOT_TOKEN || process.env.DISCORD_CLIENT_SECRET;
+  if (!token) return null;
+  try {
+    const res = await fetch(`https://discord.com/api/v10/users/${userId}`, {
+      headers: { Authorization: `Bot ${token}` }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const avatar = data.avatar
+      ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png?size=128`
+      : `https://cdn.discordapp.com/embed/avatars/${(BigInt(data.id) >> 22n) % 6n}.png`;
+    const user = { id: data.id, username: data.username, avatar };
+    discordUserCache.set(userId, user);
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 function saveWhitelist(list) {
@@ -159,10 +181,14 @@ app.get('/api/equity', ensureAuth, (req, res) => {
   });
 });
 
-app.get('/api/admin/equity/list', ensureAdmin, (req, res) => {
+app.get('/api/admin/equity/list', ensureAdmin, async (req, res) => {
   const data = loadData();
   const list = Object.entries(data.djEmpire?.equity || {}).map(([userId, percent]) => ({ userId, percent }));
-  res.json(list);
+  const enriched = await Promise.all(list.map(async (entry) => {
+    entry.user = await fetchDiscordUser(entry.userId);
+    return entry;
+  }));
+  res.json(enriched);
 });
 
 app.post('/api/admin/owners', ensureAdmin, (req, res) => {
