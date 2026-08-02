@@ -81,15 +81,15 @@ img {
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  background: url('../images/logo-icon.png') center center / contain no-repeat;
+  border-radius: 0;
   display: grid;
   place-items: center;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.3rem;
-  color: var(--bg);
+  font-size: 0;
+  color: transparent;
 }
 
 .nav-links {
@@ -151,20 +151,41 @@ img {
 
 .hero-bg {
   position: absolute;
-  inset: 0;
+  inset: -10%;
+  background: url('../images/logo-wide.png') center center / contain no-repeat;
+  opacity: 0.35;
+  z-index: -1;
+  animation: hero-breathe 18s ease-in-out infinite;
+}
+
+.hero-bg::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
   background:
-    radial-gradient(circle at 20% 30%, rgba(34, 211, 238, 0.12), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.12), transparent 40%),
-    linear-gradient(180deg, rgba(10, 10, 11, 0.2), var(--bg)),
-    url('../images/hero-bg.jpg') center/cover no-repeat;
-  opacity: 0.6;
+    radial-gradient(circle at 20% 20%, rgba(34, 211, 238, 0.22), transparent 35%),
+    radial-gradient(circle at 80% 80%, rgba(14, 165, 233, 0.18), transparent 35%),
+    radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.08), transparent 50%);
+  animation: hero-orb 15s ease-in-out infinite alternate;
 }
 
 .hero-bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 0%, var(--bg) 100%);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(34, 211, 238, 0.08), transparent 50%),
+    linear-gradient(180deg, rgba(10, 10, 11, 1) 0%, rgba(10, 10, 11, 1) 20%, transparent 60%, var(--bg) 100%);
+}
+
+@keyframes hero-breathe {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.3; }
+  50% { transform: scale(1.08) rotate(1deg); opacity: 0.45; }
+}
+
+@keyframes hero-orb {
+  0% { transform: translate(-3%, -3%) rotate(0deg); }
+  100% { transform: translate(3%, 3%) rotate(8deg); }
 }
 
 .hero .container {
