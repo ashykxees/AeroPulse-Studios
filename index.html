@@ -179,5 +179,20 @@
       document.getElementById('notWhitelisted').hidden = false;
     }
   </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) entry.target.classList.add('visible');
+        });
+      }, { threshold: 0.1 });
+
+      const selectors = 'main .section, main .card, main .teaser-card, main .teaser-body, main .section-header, .footer-grid > div';
+      document.querySelectorAll(selectors).forEach(el => {
+        el.classList.add('reveal');
+        observer.observe(el);
+      });
+    });
+  </script>
 </body>
 </html>
