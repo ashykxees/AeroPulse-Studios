@@ -30,7 +30,11 @@ function loadWhitelist() {
 }
 
 function loadData() {
-  return loadJSON(DATA_FILE);
+  const data = loadJSON(DATA_FILE);
+  if (!data.djEmpire) {
+    data.djEmpire = { totalEarnings: 0, equity: {} };
+  }
+  return data;
 }
 
 function saveData(data) {
