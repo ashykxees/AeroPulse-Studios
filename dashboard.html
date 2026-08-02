@@ -89,11 +89,14 @@
 
         <form class="admin-form" id="earningsForm">
           <div class="form-group">
-            <label for="earningsInput">Add DJ Empire Earnings (R$)</label>
+            <label for="earningsInput">DJ Empire Earnings (R$)</label>
             <input type="number" id="earningsInput" name="amount" placeholder="20000" min="0" required>
           </div>
           <div></div>
-          <button type="submit" class="btn btn-primary">Add Earnings</button>
+          <div class="form-actions">
+            <button type="submit" name="mode" value="add" class="btn btn-primary">Add Earnings</button>
+            <button type="submit" name="mode" value="set" class="btn btn-secondary">Set Total</button>
+          </div>
         </form>
 
         <form class="admin-form" id="addOwnerForm">
@@ -281,7 +284,9 @@
     document.getElementById('earningsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
-      const res = await fetch('/api/admin/earnings', {
+      const mode = e.submitter?.value || 'add';
+      const endpoint = mode === 'set' ? '/api/admin/earnings/set' : '/api/admin/earnings';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: form.amount.value })

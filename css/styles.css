@@ -1081,6 +1081,12 @@ img {
   margin-bottom: 24px;
 }
 
+.form-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 600px) {
   .admin-form {
     grid-template-columns: 1fr;

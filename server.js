@@ -368,6 +368,18 @@ app.post('/api/admin/earnings', ensureAdmin, async (req, res) => {
   res.json({ success: true, totalEarnings: data.djEmpire.totalEarnings });
 });
 
+app.post('/api/admin/earnings/set', ensureAdmin, async (req, res) => {
+  const { amount } = req.body;
+  const value = Number(amount);
+  if (Number.isNaN(value) || value < 0) {
+    return res.status(400).json({ error: 'Invalid amount' });
+  }
+  const data = loadData();
+  data.djEmpire.totalEarnings = value;
+  await saveData(data);
+  res.json({ success: true, totalEarnings: data.djEmpire.totalEarnings });
+});
+
 app.post('/api/admin/equity', ensureAdmin, async (req, res) => {
   const { userId, percent } = req.body;
   const value = Number(percent);
