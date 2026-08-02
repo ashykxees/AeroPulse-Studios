@@ -86,9 +86,10 @@
           </div>
           <div class="form-group">
             <label for="ownerPercent">Equity % (optional, default 0)</label>
-            <input type="number" id="ownerPercent" name="percent" placeholder="20" min="0" max="100">
+            <input type="number" id="ownerPercent" name="percent" placeholder="20" min="0" max="100" step="0.01">
           </div>
           <button type="submit" class="btn btn-primary">Add Owner</button>
+          <div id="ownerError" class="form-error" hidden></div>
         </form>
 
         <h3 class="display" style="font-size: 1.8rem; margin: 40px 0 20px;">DJ Empire Equity Owners</h3>
@@ -115,7 +116,7 @@
     async function loadDashboard() {
       try {
         const [meRes, equityRes] = await Promise.all([fetch('/api/me'), fetch('/api/equity')]);
-        if (!meRes.ok) return window.location.href = '//login';
+        if (!meRes.ok) return window.location.href = '/login';
 
         const me = await meRes.json();
         const equity = await equityRes.json();
@@ -198,17 +199,36 @@
     document.getElementById('addOwnerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const form = e.target;
-      const body = { userId: form.userId.value };
-      if (form.percent.value !== '') body.percent = Number(form.percent.value);
+      const errorEl = document.getElementById('ownerError');
+      const userId = form.userId.value.trim();
+      const rawPercent = form.percent.value.trim().replace('%', '');
+      const percent = rawPercent === '' ? 0 : Number(rawPercent);
+
+      if (!/^\d+$/.test(userId)) {
+        errorEl.textContent = 'Enter a valid numeric Discord user ID.';
+        errorEl.hidden = false;
+        return;
+      }
+      if (Number.isNaN(percent) || percent < 0 || percent > 100) {
+        errorEl.textContent = 'Equity % must be between 0 and 100.';
+        errorEl.hidden = false;
+        return;
+      }
+
+      errorEl.hidden = true;
       const res = await fetch('/api/admin/owners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ userId, percent })
       });
       if (res.ok) {
         form.reset();
-        loadOwners();
+        await loadOwners();
         loadDashboard();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        errorEl.textContent = data.error || 'Failed to add owner.';
+        errorEl.hidden = false;
       }
     });
 

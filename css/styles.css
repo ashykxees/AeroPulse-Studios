@@ -581,6 +581,13 @@ img {
   cursor: pointer;
 }
 
+.form-error {
+  color: #f87171;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
 .checkbox {
   display: flex;
   align-items: flex-start;
