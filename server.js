@@ -37,6 +37,7 @@ function ensureDataShape(data) {
   if (!data.djEmpire) data.djEmpire = { totalEarnings: 0, equity: {}, paidOutEarnings: {}, payoutRequests: [] };
   if (!data.djEmpire.paidOutEarnings) data.djEmpire.paidOutEarnings = {};
   if (!data.djEmpire.payoutRequests) data.djEmpire.payoutRequests = [];
+  if (!data.tasks) data.tasks = [];
 }
 
 function readWhitelist(file) {
@@ -200,9 +201,23 @@ function isWhitelisted(id) {
   return list.find(u => u.id === id);
 }
 
-function isAdmin(id) {
+function getRole(id) {
   const user = isWhitelisted(id);
-  return user && user.role === 'admin';
+  return user?.role || null;
+}
+
+function isAdmin(id) {
+  return getRole(id) === 'admin';
+}
+
+function isManager(id) {
+  const role = getRole(id);
+  return role === 'admin' || role === 'manager';
+}
+
+function isDeveloper(id) {
+  const role = getRole(id);
+  return role === 'admin' || role === 'manager' || role === 'developer';
 }
 
 function ensureAuth(req, res, next) {
@@ -212,6 +227,11 @@ function ensureAuth(req, res, next) {
 
 function ensureAdmin(req, res, next) {
   if (req.isAuthenticated() && isAdmin(req.user.id)) return next();
+  res.status(403).json({ error: 'Forbidden' });
+}
+
+function ensureManager(req, res, next) {
+  if (req.isAuthenticated() && isManager(req.user.id)) return next();
   res.status(403).json({ error: 'Forbidden' });
 }
 
@@ -292,7 +312,8 @@ if (process.env.DEV_LOGIN === 'true') {
 }
 
 app.get('/api/me', ensureAuth, (req, res) => {
-  res.json({ user: req.user, isAdmin: isAdmin(req.user.id) });
+  const role = getRole(req.user.id);
+  res.json({ user: { ...req.user, role }, isAdmin: isAdmin(req.user.id), isManager: isManager(req.user.id), isDeveloper: isDeveloper(req.user.id) });
 });
 
 function userEarnings(data, userId) {
@@ -443,6 +464,79 @@ app.post('/api/admin/payouts/:userId/pay', ensureAdmin, async (req, res) => {
   await saveData(data);
 
   res.json({ success: true, paidOut: data.djEmpire.paidOutEarnings[userId] });
+});
+
+// Tasks
+app.get('/api/admin/tasks/users', ensureManager, async (req, res) => {
+  const list = loadWhitelist().filter(u => u.role);
+  const enriched = await Promise.all(list.map(async (u) => {
+    const user = await fetchDiscordUser(u.id);
+    return { id: u.id, username: user?.username || u.id, role: u.role, avatar: user?.avatar };
+  }));
+  res.json(enriched);
+});
+
+app.post('/api/admin/tasks', ensureManager, async (req, res) => {
+  const { title, description, assignee } = req.body;
+  if (!title || !assignee) {
+    return res.status(400).json({ error: 'Title and assignee required' });
+  }
+  if (!isWhitelisted(assignee)) {
+    return res.status(400).json({ error: 'Assignee is not whitelisted' });
+  }
+  const data = loadData();
+  const task = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    title,
+    description: description || '',
+    assignee,
+    assignedBy: req.user.id,
+    status: 'open',
+    createdAt: Date.now(),
+    completedAt: null
+  };
+  data.tasks.push(task);
+  await saveData(data);
+  res.json({ success: true, task });
+});
+
+app.get('/api/tasks', ensureAuth, async (req, res) => {
+  const data = loadData();
+  const tasks = data.tasks.filter(t => t.assignee === req.user.id && t.status === 'open');
+  const enriched = await Promise.all(tasks.map(async (t) => {
+    const assignerUser = await fetchDiscordUser(t.assignedBy);
+    return { ...t, assigner: assignerUser || { username: t.assignedBy } };
+  }));
+  res.json(enriched);
+});
+
+app.post('/api/tasks/:id/complete', ensureAuth, async (req, res) => {
+  const data = loadData();
+  const task = data.tasks.find(t => t.id === req.params.id);
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+  if (task.assignee !== req.user.id && !isManager(req.user.id)) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  if (task.status === 'completed') {
+    return res.status(400).json({ error: 'Task already completed' });
+  }
+  task.status = 'completed';
+  task.completedAt = Date.now();
+  await saveData(data);
+  res.json({ success: true, task });
+});
+
+app.get('/api/admin/tasks/completed', ensureManager, async (req, res) => {
+  const data = loadData();
+  const tasks = data.tasks.filter(t => t.status === 'completed');
+  const enriched = await Promise.all(tasks.map(async (t) => {
+    const assigneeUser = await fetchDiscordUser(t.assignee);
+    const assignerUser = await fetchDiscordUser(t.assignedBy);
+    return { ...t, assignee: assigneeUser || { username: t.assignee }, assigner: assignerUser || { username: t.assignedBy } };
+  }));
+  res.json(enriched);
 });
 
 app.get('/landing', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));

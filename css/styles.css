@@ -1244,3 +1244,64 @@ img {
   color: #f87171;
   border-bottom: 1px solid rgba(248, 113, 113, 0.3);
 }
+
+/* Task system */
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 14px;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.task-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  color: var(--text);
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.task-title:hover {
+  color: var(--accent);
+}
+
+.task-body {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: none;
+}
+
+.task-card.open .task-body {
+  display: block;
+}
+
+.task-meta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.task-description {
+  color: var(--text);
+  margin-bottom: 18px;
+  line-height: 1.6;
+}
+
+#taskAssignee {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 1rem;
+}

@@ -128,6 +128,50 @@
           </table>
         </div>
       </div>
+
+      <div class="admin-panel" id="managerPanel" hidden>
+        <h2 class="display">Task Management</h2>
+
+        <form class="admin-form" id="taskForm" style="grid-template-columns: 1fr;">
+          <div class="form-group">
+            <label for="taskTitle">Task Title</label>
+            <input type="text" id="taskTitle" name="title" placeholder="Build lobby map" required>
+          </div>
+          <div class="form-group">
+            <label for="taskDescription">Description</label>
+            <textarea id="taskDescription" name="description" rows="3" placeholder="What needs to be done..."></textarea>
+          </div>
+          <div class="form-group" style="max-width: 320px;">
+            <label for="taskAssignee">Assign to</label>
+            <select id="taskAssignee" name="assignee" required>
+              <option value="">Select a user</option>
+            </select>
+          </div>
+          <div style="align-self: end;">
+            <button type="submit" class="btn btn-primary">Assign Task</button>
+          </div>
+        </form>
+
+        <h3 class="display" style="font-size: 1.8rem; margin: 40px 0 20px;">Completed Tasks</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Assignee</th>
+                <th>Completed</th>
+              </tr>
+            </thead>
+            <tbody id="completedTasksTable">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dashboard-card" id="myTasksPanel" hidden style="margin-top: 30px;">
+        <h3 class="display" style="font-size: 1.8rem; margin-bottom: 20px;">My Tasks</h3>
+        <div id="myTasksList"></div>
+      </div>
     </div>
   </main>
 
@@ -169,6 +213,13 @@
           loadOwners();
           loadPayouts();
         }
+        if (me.isManager) {
+          document.getElementById('managerPanel').hidden = false;
+          loadAssignees();
+          loadCompletedTasks();
+        }
+        document.getElementById('myTasksPanel').hidden = false;
+        loadMyTasks();
       } catch (err) {
         console.error(err);
       }
@@ -280,6 +331,114 @@
         console.error(err);
       }
     }
+
+    async function loadAssignees() {
+      try {
+        const res = await fetch('/api/admin/tasks/users');
+        if (!res.ok) return;
+        const users = await res.json();
+        const select = document.getElementById('taskAssignee');
+        select.innerHTML = '<option value="">Select a user</option>';
+        for (const user of users) {
+          const option = document.createElement('option');
+          option.value = user.id;
+          option.textContent = `${user.username} (${user.role || 'user'})`;
+          select.appendChild(option);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadCompletedTasks() {
+      try {
+        const res = await fetch('/api/admin/tasks/completed');
+        if (!res.ok) return;
+        const tasks = await res.json();
+        const tbody = document.getElementById('completedTasksTable');
+        tbody.innerHTML = '';
+        if (tasks.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No completed tasks.</td></tr>';
+          return;
+        }
+        for (const task of tasks) {
+          const username = task.assignee?.username || task.assignee;
+          const assigner = task.assigner?.username || task.assignedBy;
+          const completed = new Date(task.completedAt).toLocaleString();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${task.title}</td>
+            <td>${username}</td>
+            <td>${completed}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadMyTasks() {
+      try {
+        const res = await fetch('/api/tasks');
+        if (!res.ok) return;
+        const tasks = await res.json();
+        const list = document.getElementById('myTasksList');
+        list.innerHTML = '';
+        if (tasks.length === 0) {
+          list.innerHTML = '<p style="color:var(--text-muted);">No open tasks assigned to you.</p>';
+          return;
+        }
+        for (const task of tasks) {
+          const assigner = task.assigner?.username || task.assignedBy;
+          const created = new Date(task.createdAt).toLocaleString();
+          const card = document.createElement('div');
+          card.className = 'task-card';
+          card.innerHTML = `
+            <div class="task-header">
+              <h4 class="task-title">${task.title}</h4>
+              <button class="btn btn-primary btn-sm" data-action="complete" data-id="${task.id}">Complete</button>
+            </div>
+            <div class="task-body">
+              <div class="task-meta">Assigned by ${assigner} on ${created}</div>
+              <div class="task-description">${task.description ? escapeHtml(task.description).replace(/\n/g, '<br>') : 'No description.'}</div>
+            </div>
+          `;
+          card.querySelector('.task-header').addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            card.classList.toggle('open');
+          });
+          card.querySelector('button[data-action="complete"]').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const res = await fetch(`/api/tasks/${task.id}/complete`, { method: 'POST' });
+            if (res.ok) loadMyTasks();
+          });
+          list.appendChild(card);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const res = await fetch('/api/admin/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: form.title.value.trim(), description: form.description.value.trim(), assignee: form.assignee.value })
+      });
+      if (res.ok) {
+        form.reset();
+        loadCompletedTasks();
+      }
+    });
 
     document.getElementById('earningsForm').addEventListener('submit', async (e) => {
       e.preventDefault();
