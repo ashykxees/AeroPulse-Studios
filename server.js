@@ -451,7 +451,7 @@ app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'team.html')));
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'contact.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
-app.get('/', (req, res) => res.redirect('/landing'));
+app.get('/', (req, res) => res.redirect(301, '/landing'));
 
 app.use((req, res, next) => {
   if (req.path.endsWith('.html')) {
