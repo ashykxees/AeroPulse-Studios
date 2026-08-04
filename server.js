@@ -137,22 +137,34 @@ function getBotToken() {
 
 async function sendDiscordDM(userId, message) {
   const token = getBotToken();
-  if (!token) return;
+  if (!token) {
+    console.log('Discord DM skipped: no bot token');
+    return;
+  }
   try {
     const dmRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
       method: 'POST',
       headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipient_id: userId })
     });
-    if (!dmRes.ok) return;
+    if (!dmRes.ok) {
+      const err = await dmRes.text();
+      console.error('Discord DM channel create failed:', dmRes.status, err);
+      return;
+    }
     const channel = await dmRes.json();
-    await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
+    const msgRes = await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: message })
     });
-  } catch {
-    // ignore DM failures
+    if (!msgRes.ok) {
+      console.error('Discord DM send failed:', msgRes.status, await msgRes.text());
+    } else {
+      console.log('Discord DM sent to', userId);
+    }
+  } catch (err) {
+    console.error('Discord DM exception:', err.message);
   }
 }
 
