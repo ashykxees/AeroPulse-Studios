@@ -368,9 +368,9 @@ app.get('/api/session', ensureAnyAuth, (req, res) => {
 });
 
 app.post('/api/careers/apply', ensureAnyAuth, async (req, res) => {
-  const { position, name, email, portfolio, about } = req.body;
-  if (!position || !name || !email || !about) {
-    return res.status(400).json({ error: 'Position, name, email and about are required' });
+  const { position, email, portfolio, about, why } = req.body;
+  if (!position || !email || !about || !why) {
+    return res.status(400).json({ error: 'Position, email, about and why are required' });
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
@@ -382,10 +382,11 @@ app.post('/api/careers/apply', ensureAnyAuth, async (req, res) => {
     applicantId: req.user.id,
     applicantName: req.user.username,
     position,
-    name: name.trim().slice(0, 120),
+    name: req.user.username,
     email: email.trim().toLowerCase().slice(0, 120),
     portfolio: (portfolio || '').trim().slice(0, 500),
     about: about.trim().slice(0, 2000),
+    why: why.trim().slice(0, 2000),
     status: 'pending',
     createdAt: Date.now()
   };

@@ -199,6 +199,7 @@
                 <th>Submitted</th>
                 <th>Portfolio</th>
                 <th>About</th>
+                <th>Why us</th>
               </tr>
             </thead>
             <tbody id="applicationsTable">
@@ -479,13 +480,14 @@
         const tbody = document.getElementById('applicationsTable');
         tbody.innerHTML = '';
         if (apps.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No applications yet.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No applications yet.</td></tr>';
           return;
         }
         for (const app of apps) {
           const applicant = app.applicant?.username || app.applicantName;
           const submitted = new Date(app.createdAt).toLocaleString();
           const portfolio = app.portfolio ? `<a href="${escapeHtml(app.portfolio)}" target="_blank" rel="noopener">Link</a>` : '—';
+          const cellStyle = 'max-width:200px;max-height:80px;overflow:auto;white-space:pre-wrap;font-size:0.85rem;color:var(--text-muted);';
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${escapeHtml(app.position)}</td>
@@ -494,7 +496,8 @@
             <td>${escapeHtml(applicant)}</td>
             <td>${submitted}</td>
             <td>${portfolio}</td>
-            <td><div style="max-width:260px;max-height:80px;overflow:auto;white-space:pre-wrap;font-size:0.85rem;color:var(--text-muted);">${escapeHtml(app.about)}</div></td>
+            <td><div style="${cellStyle}">${escapeHtml(app.about)}</div></td>
+            <td><div style="${cellStyle}">${escapeHtml(app.why)}</div></td>
           `;
           tbody.appendChild(tr);
         }
