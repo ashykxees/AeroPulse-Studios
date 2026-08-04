@@ -617,7 +617,7 @@ app.delete('/api/admin/tasks/:id', ensureManager, async (req, res) => {
 app.get('/landing', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/games', (req, res) => res.sendFile(path.join(__dirname, 'games.html')));
 app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'team.html')));
-app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'contact.html')));
+app.get('/contact', (req, res) => res.redirect(301, '/landing'));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
 app.get('/', (req, res) => res.redirect(301, '/landing'));
@@ -630,7 +630,6 @@ app.use((req, res, next) => {
       '/login': '/login',
       '/games': '/games',
       '/team': '/team',
-      '/contact': '/contact',
       '/dashboard': '/dashboard'
     };
     return res.redirect(301, map[clean] || clean);
