@@ -135,12 +135,13 @@ function getBotToken() {
   return null;
 }
 
-async function sendDiscordDM(userId, message) {
+async function sendDiscordDM(userId, payload) {
   const token = getBotToken();
   if (!token) {
     console.log('Discord DM skipped: no bot token');
     return;
   }
+  const body = typeof payload === 'string' ? { content: payload } : payload;
   try {
     const dmRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
       method: 'POST',
@@ -156,7 +157,7 @@ async function sendDiscordDM(userId, message) {
     const msgRes = await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: message })
+      body: JSON.stringify(body)
     });
     if (!msgRes.ok) {
       console.error('Discord DM send failed:', msgRes.status, await msgRes.text());
@@ -531,8 +532,23 @@ app.post('/api/admin/tasks', ensureManager, async (req, res) => {
   const boardUrl = `${baseUrl}/dashboard`;
   const assigner = await fetchDiscordUser(req.user.id);
   const assignerName = assigner?.username || 'A manager';
-  const message = `You have been assigned a new task on AeroPulse Studios.\n\n**${title.replace(/\*/g, '')}**\n${description ? description.slice(0, 500).replace(/\*/g, '') + (description.length > 500 ? '...' : '') + '\n\n' : ''}Assigned by: ${assignerName}\nView your task board: ${boardUrl}`;
-  sendDiscordDM(assignee, message).catch(() => {});
+  const safeTitle = title.replace(/\*/g, '').slice(0, 256);
+  const safeDescription = description ? description.replace(/\*/g, '').slice(0, 1000) : 'No description provided.';
+  const payload = {
+    embeds: [{
+      title: safeTitle,
+      description: safeDescription,
+      url: boardUrl,
+      color: 0x0ea5e9,
+      author: { name: 'AeroPulse Studios' },
+      fields: [
+        { name: 'Assigned by', value: assignerName, inline: true },
+        { name: 'Task board', value: `[Open dashboard](${boardUrl})`, inline: true }
+      ],
+      footer: { text: 'Click the title to view your task board.' }
+    }]
+  };
+  sendDiscordDM(assignee, payload).catch(() => {});
 
   res.json({ success: true, task });
 });
@@ -574,6 +590,20 @@ app.get('/api/admin/tasks/completed', ensureManager, async (req, res) => {
     return { ...t, assignee: assigneeUser || { username: t.assignee }, assigner: assignerUser || { username: t.assignedBy } };
   }));
   res.json(enriched);
+});
+
+app.delete('/api/admin/tasks/:id', ensureManager, async (req, res) => {
+  const data = loadData();
+  const index = data.tasks.findIndex(t => t.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+  if (data.tasks[index].status !== 'completed') {
+    return res.status(400).json({ error: 'Only completed tasks can be deleted' });
+  }
+  data.tasks.splice(index, 1);
+  await saveData(data);
+  res.json({ success: true });
 });
 
 app.get('/landing', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));

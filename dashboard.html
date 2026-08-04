@@ -160,6 +160,7 @@
                 <th>Title</th>
                 <th>Assignee</th>
                 <th>Completed</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="completedTasksTable">
@@ -358,20 +359,38 @@
         const tbody = document.getElementById('completedTasksTable');
         tbody.innerHTML = '';
         if (tasks.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No completed tasks.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No completed tasks.</td></tr>';
           return;
         }
         for (const task of tasks) {
           const username = task.assignee?.username || task.assignee;
-          const assigner = task.assigner?.username || task.assignedBy;
           const completed = new Date(task.completedAt).toLocaleString();
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${task.title}</td>
-            <td>${username}</td>
+            <td>${escapeHtml(task.title)}</td>
+            <td>${escapeHtml(username)}</td>
             <td>${completed}</td>
+            <td><button class="btn btn-sm" data-action="delete-task" data-id="${task.id}" style="background:#ef4444;color:#fff;border:none;">Delete</button></td>
           `;
           tbody.appendChild(tr);
+        }
+        tbody.querySelectorAll('[data-action="delete-task"]').forEach(btn => {
+          btn.addEventListener('click', () => deleteTask(btn.dataset.id));
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function deleteTask(id) {
+      if (!confirm('Delete this completed task?')) return;
+      try {
+        const res = await fetch(`/api/admin/tasks/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          loadCompletedTasks();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.error || 'Failed to delete task');
         }
       } catch (err) {
         console.error(err);
