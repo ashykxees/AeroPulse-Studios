@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Careers | AeroPulse Studios</title>
+  <meta name="description" content="Join AeroPulse Studios. Open QA Tester and QA Testing Lead roles.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <a href="/landing" class="logo">
+        <span class="logo-icon">A</span>
+        <span>AeroPulse Studios</span>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/landing">Home</a></li>
+          <li><a href="/games">Games</a></li>
+          <li><a href="/team">Team</a></li>
+          <li><a href="/careers" class="active">Careers</a></li>
+          <li><a href="/dashboard">Dashboard</a></li>
+        </ul>
+      </nav>
+      <a href="/dashboard" class="nav-cta">Dashboard</a>
+      <button class="mobile-menu-btn" aria-label="Open menu">&#9776;</button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="/landing">Home</a>
+      <a href="/games">Games</a>
+      <a href="/team">Team</a>
+      <a href="/careers">Careers</a>
+      <a href="/dashboard">Dashboard</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero careers-hero">
+      <div class="hero-bg"></div>
+      <div class="container">
+        <span class="hero-label">Careers</span>
+        <h1 class="display">Join our <span>team.</span></h1>
+        <p>Help build the next generation of original game worlds. We're looking for sharp eyes and clear communicators to shape polished player experiences.</p>
+        <div class="hero-actions">
+          <a href="#open-positions" class="btn btn-primary">View open roles &rarr;</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container" style="max-width: 900px; text-align: center;">
+        <div class="section-header">
+          <span class="section-label">Why AeroPulse</span>
+          <h2 class="display">Build with purpose</h2>
+        </div>
+        <p class="lead">We keep the team tight, the ambitions high, and the workflow remote-first. Every role has a real impact on the games players will remember.</p>
+      </div>
+    </section>
+
+    <section class="section" id="open-positions" style="padding-top: 40px;">
+      <div class="container">
+        <div class="section-header" style="text-align: center;">
+          <span class="section-label">Open positions</span>
+          <h2 class="display">We're hiring</h2>
+          <p style="color: var(--text-muted);">All roles are remote and full-time.</p>
+        </div>
+        <div class="careers-grid">
+          <article class="career-card">
+            <span class="career-badge">Hot position</span>
+            <h3 class="career-title">QA Tester</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">As a QA Tester, you'll help us make sure our games are fun, polished, and ready for players. You'll playtest new and updated features, look for bugs and issues, test different systems and mechanics, and make sure everything works as intended.</p>
+            <ul class="career-list">
+              <li>Playtest games across different stages of development</li>
+              <li>Test new features, updates, gameplay systems, and mechanics</li>
+              <li>Find and report bugs, glitches, and unexpected issues</li>
+              <li>Provide clear and constructive feedback to the development team</li>
+              <li>Reproduce bugs and provide detailed steps to help developers fix them</li>
+            </ul>
+            <div class="career-meta">
+              <span>Remote</span>
+              <span>Full-time</span>
+            </div>
+            <button class="btn btn-primary" data-position="QA Tester">Apply now</button>
+          </article>
+
+          <article class="career-card">
+            <span class="career-badge">Hot position</span>
+            <h3 class="career-title">QA Testing Lead</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">As a QA Testing Lead, you'll guide the QA team's testing efforts, define test plans, and ensure we ship stable, polished releases. You'll coordinate with developers and managers to prioritize issues and improve our QA pipeline.</p>
+            <ul class="career-list">
+              <li>Lead and coordinate the QA team's testing efforts</li>
+              <li>Create and maintain test plans, checklists, and bug-tracking workflows</li>
+              <li>Prioritize issues and communicate them clearly to developers</li>
+              <li>Oversee testing across devices and builds</li>
+              <li>Drive improvements to the QA pipeline and release quality</li>
+            </ul>
+            <div class="career-meta">
+              <span>Remote</span>
+              <span>Full-time</span>
+            </div>
+            <button class="btn btn-primary" data-position="QA Testing Lead">Apply now</button>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="applyModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="closeModal" aria-label="Close">&times;</button>
+      <h2 class="display" id="modalTitle">Apply</h2>
+      <p>Tell us about yourself and we'll be in touch.</p>
+      <div id="modalLogin" hidden>
+        <p style="margin-bottom: 20px;">You need to log in with Discord before submitting an application.</p>
+        <a href="/auth/discord?redirect=/careers" class="btn btn-primary">Log in with Discord</a>
+      </div>
+      <form id="applyForm" hidden>
+        <input type="hidden" id="positionField" name="position">
+        <div class="form-group">
+          <label for="applyName">Name</label>
+          <input type="text" id="applyName" name="name" required>
+        </div>
+        <div class="form-group">
+          <label for="applyEmail">Email</label>
+          <input type="email" id="applyEmail" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="applyPortfolio">Portfolio / profile link</label>
+          <input type="text" id="applyPortfolio" name="portfolio" placeholder="https://">
+        </div>
+        <div class="form-group">
+          <label for="applyAbout">About you</label>
+          <textarea id="applyAbout" name="about" rows="5" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit application</button>
+        <p id="applyError" style="color: #ef4444; margin-top: 12px; font-size: 0.9rem;" hidden></p>
+        <p id="applySuccess" style="color: #22d3ee; margin-top: 12px; font-size: 0.9rem;" hidden>Application submitted. We'll be in touch soon.</p>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="/landing" class="logo">
+            <span class="logo-icon">A</span>
+            <span>AeroPulse Studios</span>
+          </a>
+          <p>An independent game studio building original worlds and deeply engaging systems.</p>
+          <div class="footer-socials">
+            <a href="https://discord.gg/2VPfs7uECQ" aria-label="Discord" target="_blank" rel="noopener">D</a>
+            <a href="https://x.com/AeroPulseStudio" aria-label="X" target="_blank" rel="noopener">X</a>
+            <a href="#" aria-label="YouTube">Y</a>
+          </div>
+        </div>
+        <div>
+          <h4>Explore</h4>
+          <ul>
+            <li><a href="/landing">Home</a></li>
+            <li><a href="/games">Games</a></li>
+            <li><a href="/team">Team</a></li>
+            <li><a href="/careers">Careers</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Connect</h4>
+          <ul>
+            <li><a href="mailto:contact@aeropulse-studios.com">contact@aeropulse-studios.com</a></li>
+            <li><a href="#">Privacy</a></li>
+            <li><a href="#">Terms</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; 2026 AeroPulse Studios</span>
+        <span>Built with passion</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>
+    const modal = document.getElementById('applyModal');
+    const closeModalBtn = document.getElementById('closeModal');
+    const applyForm = document.getElementById('applyForm');
+    const modalLogin = document.getElementById('modalLogin');
+    const modalTitle = document.getElementById('modalTitle');
+    const positionField = document.getElementById('positionField');
+    const applyError = document.getElementById('applyError');
+    const applySuccess = document.getElementById('applySuccess');
+    let currentUser = null;
+
+    async function loadSession() {
+      try {
+        const res = await fetch('/api/session');
+        if (res.ok) {
+          const data = await res.json();
+          currentUser = data.user;
+          return true;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      currentUser = null;
+      return false;
+    }
+
+    async function openModal(position) {
+      positionField.value = position;
+      modalTitle.textContent = `Apply — ${position}`;
+      applyError.hidden = true;
+      applySuccess.hidden = true;
+      applyForm.reset();
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+
+      const loggedIn = await loadSession();
+      if (loggedIn) {
+        applyForm.hidden = false;
+        modalLogin.hidden = true;
+        document.getElementById('applyName').value = currentUser.username || '';
+        document.getElementById('applyEmail').value = currentUser.email || '';
+      } else {
+        applyForm.hidden = true;
+        modalLogin.hidden = false;
+      }
+    }
+
+    function closeModal() {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.querySelectorAll('[data-position]').forEach(btn => {
+      btn.addEventListener('click', () => openModal(btn.dataset.position));
+    });
+
+    closeModalBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    applyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      applyError.hidden = true;
+      const form = e.target;
+      const body = {
+        position: form.position.value,
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        portfolio: form.portfolio.value.trim(),
+        about: form.about.value.trim()
+      };
+      const res = await fetch('/api/careers/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        applyForm.hidden = true;
+        applySuccess.hidden = false;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        applyError.textContent = data.error || 'Failed to submit application.';
+        applyError.hidden = false;
+      }
+    });
+  </script>
+</body>
+</html>

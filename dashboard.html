@@ -18,6 +18,7 @@
           <li><a href="/landing">Home</a></li>
           <li><a href="/games">Games</a></li>
           <li><a href="/team">Team</a></li>
+          <li><a href="/careers">Careers</a></li>
           <li><a href="/dashboard" class="active">Dashboard</a></li>
         </ul>
       </nav>
@@ -28,6 +29,7 @@
       <a href="/landing">Home</a>
       <a href="/games">Games</a>
       <a href="/team">Team</a>
+      <a href="/careers">Careers</a>
       <a href="/dashboard">Dashboard</a>
       <a href="/auth/logout">Logout</a>
     </div>
@@ -184,6 +186,27 @@
         </div>
       </div>
 
+      <div class="admin-panel" id="applicationsPanel" hidden>
+        <h2 class="display">Applications</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Position</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Applicant</th>
+                <th>Submitted</th>
+                <th>Portfolio</th>
+                <th>About</th>
+              </tr>
+            </thead>
+            <tbody id="applicationsTable">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="dashboard-card" id="myTasksPanel" hidden style="margin-top: 30px;">
         <h3 class="display" style="font-size: 1.8rem; margin-bottom: 20px;">My Tasks</h3>
         <div id="myTasksList"></div>
@@ -225,9 +248,11 @@
 
         if (me.isAdmin) {
           document.getElementById('adminPanel').hidden = false;
+          document.getElementById('applicationsPanel').hidden = false;
           document.getElementById('earningsInput').value = equity.totalEarnings;
           loadOwners();
           loadPayouts();
+          loadApplications();
         }
         if (me.isManager) {
           document.getElementById('managerPanel').hidden = false;
@@ -440,6 +465,38 @@
         } else {
           const err = await res.json().catch(() => ({}));
           alert(err.error || 'Failed to delete task');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadApplications() {
+      try {
+        const res = await fetch('/api/admin/applications');
+        if (!res.ok) return;
+        const apps = await res.json();
+        const tbody = document.getElementById('applicationsTable');
+        tbody.innerHTML = '';
+        if (apps.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No applications yet.</td></tr>';
+          return;
+        }
+        for (const app of apps) {
+          const applicant = app.applicant?.username || app.applicantName;
+          const submitted = new Date(app.createdAt).toLocaleString();
+          const portfolio = app.portfolio ? `<a href="${escapeHtml(app.portfolio)}" target="_blank" rel="noopener">Link</a>` : '—';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${escapeHtml(app.position)}</td>
+            <td>${escapeHtml(app.name)}</td>
+            <td>${escapeHtml(app.email)}</td>
+            <td>${escapeHtml(applicant)}</td>
+            <td>${submitted}</td>
+            <td>${portfolio}</td>
+            <td><div style="max-width:260px;max-height:80px;overflow:auto;white-space:pre-wrap;font-size:0.85rem;color:var(--text-muted);">${escapeHtml(app.about)}</div></td>
+          `;
+          tbody.appendChild(tr);
         }
       } catch (err) {
         console.error(err);

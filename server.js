@@ -38,6 +38,7 @@ function ensureDataShape(data) {
   if (!data.djEmpire.paidOutEarnings) data.djEmpire.paidOutEarnings = {};
   if (!data.djEmpire.payoutRequests) data.djEmpire.payoutRequests = [];
   if (!data.tasks) data.tasks = [];
+  if (!data.applications) data.applications = [];
 }
 
 function readWhitelist(file) {
@@ -255,6 +256,11 @@ function ensureAuth(req, res, next) {
   res.redirect('/login');
 }
 
+function ensureAnyAuth(req, res, next) {
+  if (req.isAuthenticated()) return next();
+  res.status(401).json({ error: 'Login required' });
+}
+
 function ensureAdmin(req, res, next) {
   if (req.isAuthenticated() && isAdmin(req.user.id)) return next();
   res.status(403).json({ error: 'Forbidden' });
@@ -281,11 +287,12 @@ if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
     clientID: process.env.DISCORD_CLIENT_ID,
     clientSecret: process.env.DISCORD_CLIENT_SECRET,
     callbackURL: process.env.DISCORD_CALLBACK_URL || 'http://localhost:3000/auth/discord/callback',
-    scope: ['identify']
+    scope: ['identify', 'email']
   }, (accessToken, refreshToken, profile, done) => {
     const user = {
       id: profile.id,
       username: profile.username,
+      email: profile.email || '',
       avatar: profile.avatar
         ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png?size=128`
         : `https://cdn.discordapp.com/embed/avatars/${(BigInt(profile.id) >> 22n) % 6n}.png`
@@ -300,7 +307,14 @@ passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
 app.get('/auth/discord',
-  passport.authenticate('discord', { scope: ['identify'] }),
+  (req, res, next) => {
+    const redirect = req.query.redirect;
+    if (redirect && (redirect === '/careers' || redirect.startsWith('/careers'))) {
+      req.session.returnTo = redirect;
+    }
+    next();
+  },
+  passport.authenticate('discord', { scope: ['identify', 'email'] }),
   (req, res) => { res.send('Redirecting to Discord...'); });
 
 app.get('/auth/discord/callback', (req, res, next) => {
@@ -315,11 +329,14 @@ app.get('/auth/discord/callback', (req, res, next) => {
     }
     req.login(user, loginErr => {
       if (loginErr) return next(loginErr);
-      if (!isWhitelisted(user.id)) {
+      const returnTo = req.session.returnTo;
+      delete req.session.returnTo;
+      const allowApplicant = returnTo && (returnTo === '/careers' || returnTo.startsWith('/careers'));
+      if (!isWhitelisted(user.id) && !allowApplicant) {
         req.logout(() => {});
         return res.redirect('/landing?error=not-whitelisted');
       }
-      res.redirect('/dashboard');
+      res.redirect(returnTo || '/dashboard');
     });
   })(req, res, next);
 });
@@ -344,6 +361,47 @@ if (process.env.DEV_LOGIN === 'true') {
 app.get('/api/me', ensureAuth, (req, res) => {
   const role = getRole(req.user.id);
   res.json({ user: { ...req.user, role }, isAdmin: isAdmin(req.user.id), isManager: isManager(req.user.id), isDeveloper: isDeveloper(req.user.id) });
+});
+
+app.get('/api/session', ensureAnyAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+app.post('/api/careers/apply', ensureAnyAuth, async (req, res) => {
+  const { position, name, email, portfolio, about } = req.body;
+  if (!position || !name || !email || !about) {
+    return res.status(400).json({ error: 'Position, name, email and about are required' });
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email' });
+  }
+  const data = loadData();
+  const application = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    applicantId: req.user.id,
+    applicantName: req.user.username,
+    position,
+    name: name.trim().slice(0, 120),
+    email: email.trim().toLowerCase().slice(0, 120),
+    portfolio: (portfolio || '').trim().slice(0, 500),
+    about: about.trim().slice(0, 2000),
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  data.applications.push(application);
+  await saveData(data);
+  res.json({ success: true, application });
+});
+
+app.get('/api/admin/applications', ensureAdmin, async (req, res) => {
+  const data = loadData();
+  const apps = [...data.applications].sort((a, b) => b.createdAt - a.createdAt);
+  const enriched = await Promise.all(apps.map(async (a) => {
+    const user = await fetchDiscordUser(a.applicantId);
+    return { ...a, applicant: user || { id: a.applicantId, username: a.applicantName } };
+  }));
+  res.json(enriched);
 });
 
 function userEarnings(data, userId) {
@@ -617,6 +675,7 @@ app.delete('/api/admin/tasks/:id', ensureManager, async (req, res) => {
 app.get('/landing', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/games', (req, res) => res.sendFile(path.join(__dirname, 'games.html')));
 app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'team.html')));
+app.get('/careers', (req, res) => res.sendFile(path.join(__dirname, 'careers.html')));
 app.get('/contact', (req, res) => res.redirect(301, '/landing'));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
@@ -630,6 +689,7 @@ app.use((req, res, next) => {
       '/login': '/login',
       '/games': '/games',
       '/team': '/team',
+      '/careers': '/careers',
       '/dashboard': '/dashboard'
     };
     return res.redirect(301, map[clean] || clean);
