@@ -581,6 +581,17 @@ app.post('/api/tasks/:id/complete', ensureAuth, async (req, res) => {
   res.json({ success: true, task });
 });
 
+app.get('/api/admin/tasks', ensureManager, async (req, res) => {
+  const data = loadData();
+  const tasks = data.tasks.filter(t => t.status !== 'completed');
+  const enriched = await Promise.all(tasks.map(async (t) => {
+    const assigneeUser = await fetchDiscordUser(t.assignee);
+    const assignerUser = await fetchDiscordUser(t.assignedBy);
+    return { ...t, assignee: assigneeUser || { username: t.assignee }, assigner: assignerUser || { username: t.assignedBy } };
+  }));
+  res.json(enriched);
+});
+
 app.get('/api/admin/tasks/completed', ensureManager, async (req, res) => {
   const data = loadData();
   const tasks = data.tasks.filter(t => t.status === 'completed');
@@ -597,9 +608,6 @@ app.delete('/api/admin/tasks/:id', ensureManager, async (req, res) => {
   const index = data.tasks.findIndex(t => t.id === req.params.id);
   if (index === -1) {
     return res.status(404).json({ error: 'Task not found' });
-  }
-  if (data.tasks[index].status !== 'completed') {
-    return res.status(400).json({ error: 'Only completed tasks can be deleted' });
   }
   data.tasks.splice(index, 1);
   await saveData(data);

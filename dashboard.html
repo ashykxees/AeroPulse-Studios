@@ -152,6 +152,23 @@
           </div>
         </form>
 
+        <h3 class="display" style="font-size: 1.8rem; margin: 40px 0 20px;">Assigned Tasks</h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Assignee</th>
+                <th>Status</th>
+                <th>Assigned</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="assignedTasksTable">
+            </tbody>
+          </table>
+        </div>
+
         <h3 class="display" style="font-size: 1.8rem; margin: 40px 0 20px;">Completed Tasks</h3>
         <div class="table-wrap">
           <table class="data-table">
@@ -217,6 +234,7 @@
         if (me.isManager) {
           document.getElementById('managerPanel').hidden = false;
           loadAssignees();
+          loadAssignedTasks();
           loadCompletedTasks();
         }
         document.getElementById('myTasksPanel').hidden = false;
@@ -351,6 +369,38 @@
       }
     }
 
+    async function loadAssignedTasks() {
+      try {
+        const res = await fetch('/api/admin/tasks');
+        if (!res.ok) return;
+        const tasks = await res.json();
+        const tbody = document.getElementById('assignedTasksTable');
+        tbody.innerHTML = '';
+        if (tasks.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No assigned tasks.</td></tr>';
+          return;
+        }
+        for (const task of tasks) {
+          const username = task.assignee?.username || task.assignee;
+          const assigned = new Date(task.createdAt).toLocaleString();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${escapeHtml(task.title)}</td>
+            <td>${escapeHtml(username)}</td>
+            <td>${escapeHtml(task.status)}</td>
+            <td>${assigned}</td>
+            <td><button class="btn btn-sm" data-action="delete-task" data-id="${task.id}" style="background:#ef4444;color:#fff;border:none;">Remove</button></td>
+          `;
+          tbody.appendChild(tr);
+        }
+        tbody.querySelectorAll('[data-action="delete-task"]').forEach(btn => {
+          btn.addEventListener('click', () => deleteTask(btn.dataset.id));
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     async function loadCompletedTasks() {
       try {
         const res = await fetch('/api/admin/tasks/completed');
@@ -383,10 +433,11 @@
     }
 
     async function deleteTask(id) {
-      if (!confirm('Delete this completed task?')) return;
+      if (!confirm('Remove this task?')) return;
       try {
         const res = await fetch(`/api/admin/tasks/${id}`, { method: 'DELETE' });
         if (res.ok) {
+          loadAssignedTasks();
           loadCompletedTasks();
         } else {
           const err = await res.json().catch(() => ({}));
@@ -458,6 +509,7 @@
       });
       if (res.ok) {
         form.reset();
+        loadAssignedTasks();
         loadCompletedTasks();
       }
     });
