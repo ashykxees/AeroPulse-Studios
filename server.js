@@ -514,6 +514,14 @@ app.post('/api/admin/tasks', ensureManager, async (req, res) => {
   };
   data.tasks.push(task);
   await saveData(data);
+
+  const baseUrl = `${req.get('x-forwarded-proto') || req.protocol}://${req.get('host')}`;
+  const boardUrl = `${baseUrl}/dashboard`;
+  const assigner = await fetchDiscordUser(req.user.id);
+  const assignerName = assigner?.username || 'A manager';
+  const message = `You have been assigned a new task on AeroPulse Studios.\n\n**${title.replace(/\*/g, '')}**\n${description ? description.slice(0, 500).replace(/\*/g, '') + (description.length > 500 ? '...' : '') + '\n\n' : ''}Assigned by: ${assignerName}\nView your task board: ${boardUrl}`;
+  sendDiscordDM(assignee, message).catch(() => {});
+
   res.json({ success: true, task });
 });
 
