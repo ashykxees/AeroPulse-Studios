@@ -41,6 +41,7 @@ function ensureDataShape(data) {
   if (!data.djEmpire.payoutRequests) data.djEmpire.payoutRequests = [];
   if (!data.tasks) data.tasks = [];
   if (!data.applications) data.applications = [];
+  if (!data.staffApplications) data.staffApplications = [];
 }
 
 function readWhitelist(file) {
@@ -407,6 +408,61 @@ app.get('/api/admin/applications', ensureAdmin, async (req, res) => {
   res.json(enriched);
 });
 
+const STAFF_QUIZ_ANSWERS = ['C','B','B','B','A','B','B','B','A','A'];
+
+app.post('/api/staff-application/submit', ensureAnyAuth, async (req, res) => {
+  const { robloxUsername, discordUsername, discordId, email, answers, policyAgree, dmConsent, volunteer } = req.body;
+  if (!robloxUsername || !discordUsername || !discordId || !email || !answers) {
+    return res.status(400).json({ error: 'All sections are required' });
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email' });
+  }
+  if (!policyAgree || !dmConsent || !volunteer) {
+    return res.status(400).json({ error: 'You must agree to all statements' });
+  }
+  const answerKeys = Object.keys(answers).sort();
+  if (answerKeys.length !== STAFF_QUIZ_ANSWERS.length) {
+    return res.status(400).json({ error: 'All quiz questions must be answered' });
+  }
+  let score = 0;
+  for (let i = 0; i < STAFF_QUIZ_ANSWERS.length; i++) {
+    if (answers[`q${i + 1}`] === STAFF_QUIZ_ANSWERS[i]) score++;
+  }
+  const data = loadData();
+  const application = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    applicantId: req.user.id,
+    applicantName: req.user.username,
+    robloxUsername: robloxUsername.trim().slice(0, 80),
+    discordUsername: discordUsername.trim().slice(0, 80),
+    discordId: discordId.trim().slice(0, 40),
+    email: email.trim().toLowerCase().slice(0, 120),
+    answers,
+    score,
+    maxScore: STAFF_QUIZ_ANSWERS.length,
+    policyAgree: !!policyAgree,
+    dmConsent: !!dmConsent,
+    volunteer: !!volunteer,
+    status: 'pending',
+    createdAt: Date.now()
+  };
+  data.staffApplications.push(application);
+  await saveData(data);
+  res.json({ success: true, application });
+});
+
+app.get('/api/admin/staff-applications', ensureAdmin, async (req, res) => {
+  const data = loadData();
+  const apps = [...data.staffApplications].sort((a, b) => b.createdAt - a.createdAt);
+  const enriched = await Promise.all(apps.map(async (a) => {
+    const user = await fetchDiscordUser(a.applicantId);
+    return { ...a, applicant: user || { id: a.applicantId, username: a.applicantName } };
+  }));
+  res.json(enriched);
+});
+
 function userEarnings(data, userId) {
   const equity = data.djEmpire?.equity?.[userId] || 0;
   const total = data.djEmpire?.totalEarnings || 0;
@@ -679,6 +735,9 @@ app.get('/landing', (req, res) => res.sendFile(path.join(__dirname, 'index.html'
 app.get('/games', (req, res) => res.sendFile(path.join(__dirname, 'games.html')));
 app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'team.html')));
 app.get('/careers', (req, res) => res.sendFile(path.join(__dirname, 'careers.html')));
+app.get('/company-policy', (req, res) => res.sendFile(path.join(__dirname, 'company-policy.html')));
+app.get('/staff-application', (req, res) => res.sendFile(path.join(__dirname, 'staff-application.html')));
+app.get('/staff-application/success', (req, res) => res.sendFile(path.join(__dirname, 'staff-application-success.html')));
 app.get('/contact', (req, res) => res.redirect(301, '/landing'));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
@@ -693,6 +752,9 @@ app.use((req, res, next) => {
       '/games': '/games',
       '/team': '/team',
       '/careers': '/careers',
+      '/company-policy': '/company-policy',
+      '/staff-application': '/staff-application',
+      '/staff-application-success': '/staff-application/success',
       '/dashboard': '/dashboard'
     };
     return res.redirect(301, map[clean] || clean);

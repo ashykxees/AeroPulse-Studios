@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moderation Staff Application | AeroPulse Studios</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <a href="/landing" class="logo">
+        <span class="logo-icon">A</span>
+        <span>AeroPulse Studios</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="staff-application-page">
+    <div class="container" style="max-width: 900px;">
+
+      <div class="staff-login-prompt" id="loginPrompt" hidden>
+        <div class="staff-card" style="text-align: center;">
+          <h1 class="display">Staff Assessment</h1>
+          <p style="color: var(--text-muted); margin-bottom: 24px;">Please log in with Discord to access the AeroPulse Moderation Staff Assessment.</p>
+          <a href="/auth/discord?redirect=/staff-application" class="btn btn-primary">Log in with Discord</a>
+        </div>
+      </div>
+
+      <form class="staff-form" id="staffForm" hidden>
+        <div class="staff-progress">
+          <div class="staff-progress-bar" id="progressBar"></div>
+          <span class="staff-progress-step" id="progressText">Step 1 of 4</span>
+        </div>
+
+        <section class="staff-step active" data-step="1">
+          <div class="staff-card">
+            <span class="section-label">Section 1 — Introduction</span>
+            <h1 class="display" style="margin: 8px 0 20px;">AeroPulse Moderation Staff Assessment</h1>
+            <p>Congratulations! You have successfully passed the initial application on AeroPulse Studios and have been invited to complete the next stage of our recruitment process.</p>
+            <p>This assessment is not another application — it's a knowledge-based quiz designed to evaluate your understanding of moderation practices, decision-making, and your ability to handle common situations you may encounter as a member of the AeroPulse Moderation Team.</p>
+            <p>Please answer every question honestly and to the best of your ability. Take your time, read each question carefully, and avoid guessing whenever possible.</p>
+            <p><strong>Good luck — we're excited to see how you perform!</strong></p>
+            <div class="staff-actions" style="justify-content: flex-end;">
+              <button type="button" class="btn btn-primary" onclick="nextStep()">Proceed to assessment &rarr;</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="staff-step" data-step="2">
+          <div class="staff-card">
+            <span class="section-label">Section 2 — Personal Information</span>
+            <h2 class="display" style="margin: 8px 0 24px;">Personal Information</h2>
+
+            <div class="form-group">
+              <label for="robloxUsername">Q1. What is your Roblox username?</label>
+              <input type="text" id="robloxUsername" name="robloxUsername" required>
+            </div>
+
+            <div class="form-group">
+              <label for="discordUsername">Q2. What is your Discord username &amp; ID?</label>
+              <input type="text" id="discordUsername" name="discordUsername" readonly required style="background: var(--surface-3); opacity: 0.8; cursor: not-allowed;">
+              <input type="hidden" id="discordId" name="discordId">
+            </div>
+
+            <div class="form-group">
+              <label for="email">Q3. What is your email?</label>
+              <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="staff-actions">
+              <button type="button" class="btn btn-secondary" onclick="prevStep()">&larr; Back</button>
+              <button type="button" class="btn btn-primary" onclick="nextStep()">Continue &rarr;</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="staff-step" data-step="3">
+          <div class="staff-card">
+            <span class="section-label">Section 3 — Questions</span>
+            <h2 class="display" style="margin: 8px 0 24px;">Moderation Knowledge Quiz</h2>
+
+            <div class="staff-questions" id="questionsContainer"></div>
+
+            <div class="staff-actions">
+              <button type="button" class="btn btn-secondary" onclick="prevStep()">&larr; Back</button>
+              <button type="button" class="btn btn-primary" onclick="nextStep()">Continue &rarr;</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="staff-step" data-step="4">
+          <div class="staff-card">
+            <span class="section-label">Section 4 — Agreements</span>
+            <h2 class="display" style="margin: 8px 0 24px;">Agreements</h2>
+
+            <label class="checkbox">
+              <input type="checkbox" id="policyAgree" name="policyAgree" required>
+              <span>Q1. Do you agree to our <a href="/company-policy" target="_blank" rel="noopener">company policy</a>?</span>
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="dmConsent" name="dmConsent" required>
+              <span>Q2. Do you give our leadership consent to DM you via Discord?</span>
+            </label>
+
+            <label class="checkbox">
+              <input type="checkbox" id="volunteer" name="volunteer" required>
+              <span>Q3. Do you understand that this is starting as a volunteer position?</span>
+            </label>
+
+            <div class="staff-actions">
+              <button type="button" class="btn btn-secondary" onclick="prevStep()">&larr; Back</button>
+              <button type="button" class="btn btn-primary" onclick="nextStep()">Review answers &rarr;</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="staff-step" data-step="5">
+          <div class="staff-card">
+            <span class="section-label">Review &amp; Submit</span>
+            <h2 class="display" style="margin: 8px 0 24px;">Review your application</h2>
+            <div id="reviewContent" class="staff-review"></div>
+            <p style="color: var(--text-muted); margin: 24px 0;"><strong>Are you ready to submit this?</strong></p>
+            <div class="staff-actions">
+              <button type="button" class="btn btn-secondary" onclick="prevStep()">&larr; Edit</button>
+              <button type="submit" class="btn btn-primary">Submit application</button>
+            </div>
+            <p id="submitError" style="color: #f87171; margin-top: 16px;" hidden></p>
+          </div>
+        </section>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/main.js"></script>
+  <script>
+    const QUESTIONS = [
+      { q: "A member is repeatedly spamming in general chat after being asked to stop. What should you do?", options: { A: "Ignore them", B: "Continue reminding them without taking action", C: "Follow the moderation guidelines by issuing the appropriate punishment if necessary", D: "Spam back to get their attention" } },
+      { q: "A friend breaks a server rule. How should you handle the situation?", options: { A: "Ignore it because they're your friend", B: "Apply the same rules you would to any other member", C: "Ask another moderator to handle it every time", D: "Give them a warning without documenting it" } },
+      { q: "What should you do if you're unsure how to handle a moderation situation?", options: { A: "Guess what seems right", B: "Ask a senior staff member or administrator for guidance", C: "Ignore the report", D: "Let another user decide" } },
+      { q: "Which quality is most important for a moderator?", options: { A: "Popularity", B: "Fairness and professionalism", C: "Playing the game the most", D: "Having the highest rank" } },
+      { q: "If a member becomes disrespectful after receiving a punishment, you should...", options: { A: "Stay calm and continue acting professionally", B: "Argue with them", C: "Insult them back", D: "Remove their punishment immediately" } },
+      { q: "What is the main purpose of a moderator?", options: { A: "To punish as many members as possible", B: "To keep the community safe, fair, and welcoming", C: "To win arguments", D: "To make friends with everyone" } },
+      { q: "A user reports another member, but there isn't enough evidence. What should you do?", options: { A: "Punish the reported member anyway", B: "Request additional evidence or investigate further before taking action", C: "Ban both users", D: "Ignore the report" } },
+      { q: "What should you do if you accidentally issue the wrong punishment?", options: { A: "Hide your mistake", B: "Correct the mistake and notify a senior staff member if required", C: "Leave it as is", D: "Blame another moderator" } },
+      { q: "Why is consistency important when moderating?", options: { A: "It helps ensure all members are treated fairly and equally.", B: "It makes punishments longer.", C: "It helps moderators rank up faster.", D: "It prevents users from asking questions." } },
+      { q: "What should you do before taking moderation action?", options: { A: "Make sure you understand the situation and that the action follows the server rules.", B: "Punish first and ask questions later.", C: "Wait for another moderator to do it.", D: "Only act if someone else tells you to." } }
+    ];
+
+    const CORRECT_ANSWERS = ['C','B','B','B','A','B','B','B','A','A'];
+    let currentUser = null;
+    let currentStep = 1;
+
+    function renderQuestions() {
+      const container = document.getElementById('questionsContainer');
+      container.innerHTML = QUESTIONS.map((item, i) => `
+        <div class="question-block">
+          <p class="question-text">${i + 1}. ${escapeHtml(item.q)}</p>
+          <div class="options">
+            ${Object.entries(item.options).map(([key, text]) => `
+              <label class="option">
+                <input type="radio" name="q${i + 1}" value="${key}" required>
+                <span><strong>${key}.</strong> ${escapeHtml(text)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showStep(n) {
+      document.querySelectorAll('.staff-step').forEach(el => el.classList.remove('active'));
+      document.querySelector(`.staff-step[data-step="${n}"]`).classList.add('active');
+      document.getElementById('progressText').textContent = `Step ${n === 5 ? 'Review' : n} of 4`;
+      document.getElementById('progressBar').style.backgroundSize = `${Math.min((n / 5) * 100, 100)}% 100%`;
+      currentStep = n;
+      window.scrollTo(0, 0);
+    }
+
+    function validateStep(n) {
+      if (n === 2) {
+        const roblox = document.getElementById('robloxUsername').value.trim();
+        const email = document.getElementById('email').value.trim();
+        if (!roblox) { alert('Please enter your Roblox username.'); return false; }
+        if (!email) { alert('Please enter your email.'); return false; }
+      }
+      if (n === 3) {
+        for (let i = 1; i <= QUESTIONS.length; i++) {
+          if (!document.querySelector(`input[name="q${i}"]:checked`)) {
+            alert(`Please answer question ${i}.`);
+            return false;
+          }
+        }
+      }
+      if (n === 4) {
+        if (!document.getElementById('policyAgree').checked || !document.getElementById('dmConsent').checked || !document.getElementById('volunteer').checked) {
+          alert('You must agree to all statements before continuing.');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function nextStep() {
+      if (!validateStep(currentStep)) return;
+      if (currentStep === 4) buildReview();
+      showStep(currentStep + 1);
+    }
+
+    function prevStep() {
+      showStep(currentStep - 1);
+    }
+
+    function getQuestionText(index, answer) {
+      const q = QUESTIONS[index];
+      return `${answer}. ${q.options[answer]}`;
+    }
+
+    function buildReview() {
+      const roblox = document.getElementById('robloxUsername').value.trim();
+      const discordUser = document.getElementById('discordUsername').value;
+      const discordId = document.getElementById('discordId').value;
+      const email = document.getElementById('email').value.trim();
+      let qaHtml = '';
+      for (let i = 0; i < QUESTIONS.length; i++) {
+        const answer = document.querySelector(`input[name="q${i + 1}"]:checked`).value;
+        qaHtml += `<div class="review-row"><span class="review-label">Q${i + 1}</span><span class="review-value">${escapeHtml(getQuestionText(i, answer))}</span></div>`;
+      }
+      document.getElementById('reviewContent').innerHTML = `
+        <div class="review-row"><span class="review-label">Roblox username</span><span class="review-value">${escapeHtml(roblox)}</span></div>
+        <div class="review-row"><span class="review-label">Discord</span><span class="review-value">${escapeHtml(discordUser)} (${discordId})</span></div>
+        <div class="review-row"><span class="review-label">Email</span><span class="review-value">${escapeHtml(email)}</span></div>
+        <div class="review-section">Quiz answers</div>
+        ${qaHtml}
+        <div class="review-section">Agreements</div>
+        <div class="review-row"><span class="review-label">Company policy</span><span class="review-value">Agreed</span></div>
+        <div class="review-row"><span class="review-label">DM consent</span><span class="review-value">Given</span></div>
+        <div class="review-row"><span class="review-label">Volunteer position</span><span class="review-value">Understood</span></div>
+      `;
+    }
+
+    async function loadSession() {
+      try {
+        const res = await fetch('/api/session');
+        if (res.ok) {
+          const data = await res.json();
+          currentUser = data.user;
+          return true;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      currentUser = null;
+      return false;
+    }
+
+    document.getElementById('staffForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('submitError');
+      errorEl.hidden = true;
+
+      const answers = {};
+      let score = 0;
+      for (let i = 0; i < QUESTIONS.length; i++) {
+        const val = document.querySelector(`input[name="q${i + 1}"]:checked`).value;
+        answers[`q${i + 1}`] = val;
+        if (val === CORRECT_ANSWERS[i]) score++;
+      }
+
+      const body = {
+        robloxUsername: document.getElementById('robloxUsername').value.trim(),
+        discordUsername: currentUser.username,
+        discordId: currentUser.id,
+        email: document.getElementById('email').value.trim(),
+        answers,
+        score,
+        policyAgree: true,
+        dmConsent: true,
+        volunteer: true
+      };
+
+      try {
+        const res = await fetch('/api/staff-application/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (res.ok) {
+          window.location.href = '/staff-application/success';
+        } else {
+          const data = await res.json().catch(() => ({}));
+          errorEl.textContent = data.error || 'Failed to submit. Please try again.';
+          errorEl.hidden = false;
+        }
+      } catch (err) {
+        console.error(err);
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.hidden = false;
+      }
+    });
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    (async function init() {
+      renderQuestions();
+      const loggedIn = await loadSession();
+      if (!loggedIn) {
+        document.getElementById('loginPrompt').hidden = false;
+        return;
+      }
+      document.getElementById('staffForm').hidden = false;
+      document.getElementById('discordUsername').value = currentUser.username || '';
+      document.getElementById('discordId').value = currentUser.id || '';
+      showStep(1);
+    })();
+  </script>
+</body>
+</html>

@@ -72,6 +72,16 @@
       <div class="admin-panel" id="adminPanel" hidden>
         <h2 class="display">Admin Controls</h2>
 
+        <div class="staff-link-card" style="margin-bottom: 30px; padding: 20px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);">
+          <h3 class="display" style="font-size: 1.2rem; margin-bottom: 10px;">Staff Application Link</h3>
+          <p style="color: var(--text-muted); margin-bottom: 12px; font-size: 0.9rem;">Copy this link and send it to candidates who passed the initial application.</p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <input type="text" id="staffAppLink" value="https://aeropulse-studio.com/staff-application" readonly style="flex: 1; min-width: 260px; background: var(--surface-3);">
+            <button class="btn btn-primary" id="copyStaffAppLink" type="button">Copy link</button>
+          </div>
+          <p id="copyFeedback" style="color: #22d3ee; margin-top: 8px; font-size: 0.85rem;" hidden>Link copied to clipboard.</p>
+        </div>
+
         <h3 class="display" style="font-size: 1.8rem; margin: 20px 0 10px;">Payout Requests</h3>
         <div class="table-wrap">
           <table class="data-table">
@@ -216,6 +226,34 @@
         </div>
       </div>
 
+      <div class="admin-panel" id="staffApplicationsPanel" hidden>
+        <h2 class="display">Staff Applications</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Applicant</th>
+                <th>Roblox</th>
+                <th>Score</th>
+                <th>Submitted</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="staffApplicationsTable">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="staffAppDetailModal">
+        <div class="modal wide">
+          <button class="modal-close" id="closeStaffAppModal" aria-label="Close">&times;</button>
+          <h2 class="display" id="staffAppDetailTitle">Staff Application</h2>
+          <p id="staffAppDetailMeta" style="margin-bottom: 24px;"></p>
+          <div id="staffAppDetailBody"></div>
+        </div>
+      </div>
+
       <div class="dashboard-card" id="myTasksPanel" hidden style="margin-top: 30px;">
         <h3 class="display" style="font-size: 1.8rem; margin-bottom: 20px;">My Tasks</h3>
         <div id="myTasksList"></div>
@@ -258,10 +296,12 @@
         if (me.isAdmin) {
           document.getElementById('adminPanel').hidden = false;
           document.getElementById('applicationsPanel').hidden = false;
+          document.getElementById('staffApplicationsPanel').hidden = false;
           document.getElementById('earningsInput').value = equity.totalEarnings;
           loadOwners();
           loadPayouts();
           loadApplications();
+          loadStaffApplications();
         }
         if (me.isManager) {
           document.getElementById('managerPanel').hidden = false;
@@ -537,6 +577,102 @@
             <td>${submitted}</td>
             <td>${escapeHtml(app.status || 'pending')}</td>
             <td><button class="btn btn-primary btn-sm" onclick="viewApplication('${escapeHtml(app.id)}')">View</button></td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    const STAFF_QUESTIONS = [
+      { q: "A member is repeatedly spamming in general chat after being asked to stop. What should you do?", options: { A: "Ignore them", B: "Continue reminding them without taking action", C: "Follow the moderation guidelines by issuing the appropriate punishment if necessary", D: "Spam back to get their attention" } },
+      { q: "A friend breaks a server rule. How should you handle the situation?", options: { A: "Ignore it because they're your friend", B: "Apply the same rules you would to any other member", C: "Ask another moderator to handle it every time", D: "Give them a warning without documenting it" } },
+      { q: "What should you do if you're unsure how to handle a moderation situation?", options: { A: "Guess what seems right", B: "Ask a senior staff member or administrator for guidance", C: "Ignore the report", D: "Let another user decide" } },
+      { q: "Which quality is most important for a moderator?", options: { A: "Popularity", B: "Fairness and professionalism", C: "Playing the game the most", D: "Having the highest rank" } },
+      { q: "If a member becomes disrespectful after receiving a punishment, you should...", options: { A: "Stay calm and continue acting professionally", B: "Argue with them", C: "Insult them back", D: "Remove their punishment immediately" } },
+      { q: "What is the main purpose of a moderator?", options: { A: "To punish as many members as possible", B: "To keep the community safe, fair, and welcoming", C: "To win arguments", D: "To make friends with everyone" } },
+      { q: "A user reports another member, but there isn't enough evidence. What should you do?", options: { A: "Punish the reported member anyway", B: "Request additional evidence or investigate further before taking action", C: "Ban both users", D: "Ignore the report" } },
+      { q: "What should you do if you accidentally issue the wrong punishment?", options: { A: "Hide your mistake", B: "Correct the mistake and notify a senior staff member if required", C: "Leave it as is", D: "Blame another moderator" } },
+      { q: "Why is consistency important when moderating?", options: { A: "It helps ensure all members are treated fairly and equally.", B: "It makes punishments longer.", C: "It helps moderators rank up faster.", D: "It prevents users from asking questions." } },
+      { q: "What should you do before taking moderation action?", options: { A: "Make sure you understand the situation and that the action follows the server rules.", B: "Punish first and ask questions later.", C: "Wait for another moderator to do it.", D: "Only act if someone else tells you to." } }
+    ];
+
+    let staffApplicationData = [];
+
+    function viewStaffApplication(id) {
+      const app = staffApplicationData.find(a => a.id === id);
+      if (!app) return;
+      const applicant = app.applicant?.username || app.applicantName;
+      const submitted = new Date(app.createdAt).toLocaleString();
+      document.getElementById('staffAppDetailTitle').textContent = `Staff Application — ${escapeHtml(app.robloxUsername)}`;
+      document.getElementById('staffAppDetailMeta').textContent = `${escapeHtml(applicant)} • ${escapeHtml(app.email)} • Score ${app.score}/${app.maxScore} • ${submitted}`;
+      let qaHtml = '';
+      for (let i = 0; i < STAFF_QUESTIONS.length; i++) {
+        const answer = app.answers[`q${i + 1}`] || '—';
+        const question = STAFF_QUESTIONS[i];
+        qaHtml += `
+          <div class="app-detail-row">
+            <label>Q${i + 1}</label>
+            <p>${escapeHtml(question.q)}</p>
+            <p style="color: var(--accent); margin-top: 6px;">Selected: ${escapeHtml(answer)} — ${escapeHtml(question.options[answer] || '')}</p>
+          </div>
+        `;
+      }
+      document.getElementById('staffAppDetailBody').innerHTML = `
+        <div class="app-detail-row"><label>Roblox username</label><p>${escapeHtml(app.robloxUsername)}</p></div>
+        <div class="app-detail-row"><label>Discord username & ID</label><p>${escapeHtml(app.discordUsername)} (${escapeHtml(app.discordId)})</p></div>
+        <div class="app-detail-row"><label>Email</label><p>${escapeHtml(app.email)}</p></div>
+        <div class="app-detail-row"><label>Score</label><p>${app.score} out of ${app.maxScore}</p></div>
+        <div class="app-detail-row"><label>Agreements</label><p>Company policy: agreed • DM consent: given • Volunteer position: understood</p></div>
+        <div class="app-detail-row" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);"><label>Quiz answers</label></div>
+        ${qaHtml}
+      `;
+      document.getElementById('staffAppDetailModal').classList.add('open');
+    }
+
+    document.getElementById('closeStaffAppModal').addEventListener('click', () => {
+      document.getElementById('staffAppDetailModal').classList.remove('open');
+    });
+    document.getElementById('staffAppDetailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'staffAppDetailModal') document.getElementById('staffAppDetailModal').classList.remove('open');
+    });
+
+    document.getElementById('copyStaffAppLink').addEventListener('click', async () => {
+      const input = document.getElementById('staffAppLink');
+      try {
+        await navigator.clipboard.writeText(input.value);
+      } catch {
+        input.select();
+        document.execCommand('copy');
+      }
+      const feedback = document.getElementById('copyFeedback');
+      feedback.hidden = false;
+      setTimeout(() => feedback.hidden = true, 2000);
+    });
+
+    async function loadStaffApplications() {
+      try {
+        const res = await fetch('/api/admin/staff-applications');
+        if (!res.ok) return;
+        const apps = await res.json();
+        staffApplicationData = apps;
+        const tbody = document.getElementById('staffApplicationsTable');
+        tbody.innerHTML = '';
+        if (apps.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No staff applications yet.</td></tr>';
+          return;
+        }
+        for (const app of apps) {
+          const applicant = app.applicant?.username || app.applicantName;
+          const submitted = new Date(app.createdAt).toLocaleString();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${escapeHtml(applicant)}</td>
+            <td>${escapeHtml(app.robloxUsername)}</td>
+            <td>${app.score}/${app.maxScore}</td>
+            <td>${submitted}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="viewStaffApplication('${escapeHtml(app.id)}')">View</button></td>
           `;
           tbody.appendChild(tr);
         }
