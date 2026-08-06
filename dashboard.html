@@ -197,14 +197,22 @@
                 <th>Email</th>
                 <th>Applicant</th>
                 <th>Submitted</th>
-                <th>Portfolio</th>
-                <th>About</th>
-                <th>Why us</th>
+                <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="applicationsTable">
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="appDetailModal">
+        <div class="modal wide">
+          <button class="modal-close" id="closeAppModal" aria-label="Close">&times;</button>
+          <h2 class="display" id="appDetailPosition">Position</h2>
+          <p id="appDetailMeta" style="margin-bottom: 24px;"></p>
+          <div id="appDetailBody"></div>
         </div>
       </div>
 
@@ -472,22 +480,54 @@
       }
     }
 
+    let applicationData = [];
+
+    function viewApplication(id) {
+      const app = applicationData.find(a => a.id === id);
+      if (!app) return;
+      const applicant = app.applicant?.username || app.applicantName;
+      const submitted = new Date(app.createdAt).toLocaleString();
+      document.getElementById('appDetailPosition').textContent = app.position;
+      document.getElementById('appDetailMeta').textContent = `${escapeHtml(app.name)} • ${escapeHtml(app.email)} • ${escapeHtml(applicant)} • ${submitted}`;
+      document.getElementById('appDetailBody').innerHTML = `
+        <div class="app-detail-row">
+          <label>Portfolio / Work</label>
+          ${app.portfolio ? `<p><a href="${escapeHtml(app.portfolio)}" target="_blank" rel="noopener">${escapeHtml(app.portfolio)}</a></p>` : '<p style="color:var(--text-muted);">Not provided</p>'}
+        </div>
+        <div class="app-detail-row">
+          <label>About You</label>
+          <p>${escapeHtml(app.about).replace(/\n/g, '<br>')}</p>
+        </div>
+        <div class="app-detail-row">
+          <label>Why should we select you?</label>
+          <p>${escapeHtml(app.why).replace(/\n/g, '<br>')}</p>
+        </div>
+      `;
+      document.getElementById('appDetailModal').classList.add('open');
+    }
+
+    document.getElementById('closeAppModal').addEventListener('click', () => {
+      document.getElementById('appDetailModal').classList.remove('open');
+    });
+    document.getElementById('appDetailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'appDetailModal') document.getElementById('appDetailModal').classList.remove('open');
+    });
+
     async function loadApplications() {
       try {
         const res = await fetch('/api/admin/applications');
         if (!res.ok) return;
         const apps = await res.json();
+        applicationData = apps;
         const tbody = document.getElementById('applicationsTable');
         tbody.innerHTML = '';
         if (apps.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No applications yet.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No applications yet.</td></tr>';
           return;
         }
         for (const app of apps) {
           const applicant = app.applicant?.username || app.applicantName;
           const submitted = new Date(app.createdAt).toLocaleString();
-          const portfolio = app.portfolio ? `<a href="${escapeHtml(app.portfolio)}" target="_blank" rel="noopener">Link</a>` : '—';
-          const cellStyle = 'max-width:200px;max-height:80px;overflow:auto;white-space:pre-wrap;font-size:0.85rem;color:var(--text-muted);';
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${escapeHtml(app.position)}</td>
@@ -495,9 +535,8 @@
             <td>${escapeHtml(app.email)}</td>
             <td>${escapeHtml(applicant)}</td>
             <td>${submitted}</td>
-            <td>${portfolio}</td>
-            <td><div style="${cellStyle}">${escapeHtml(app.about)}</div></td>
-            <td><div style="${cellStyle}">${escapeHtml(app.why)}</div></td>
+            <td>${escapeHtml(app.status || 'pending')}</td>
+            <td><button class="btn btn-primary btn-sm" onclick="viewApplication('${escapeHtml(app.id)}')">View</button></td>
           `;
           tbody.appendChild(tr);
         }

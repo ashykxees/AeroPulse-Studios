@@ -1498,3 +1498,33 @@ img {
   width: 100%;
   justify-content: center;
 }
+
+.modal.wide {
+  width: min(900px, 90vw);
+}
+
+.app-detail-row {
+  margin-bottom: 18px;
+}
+
+.app-detail-row label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.app-detail-row p,
+.app-detail-row a {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0;
+  word-break: break-word;
+}
+
+.app-detail-row a {
+  color: var(--accent);
+}
