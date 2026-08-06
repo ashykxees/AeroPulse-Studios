@@ -10,6 +10,8 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
+
 const DATA_DIR = process.env.RAILWAY_VOLUME_MOUNT_PATH || process.env.DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -276,7 +278,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }
+  cookie: { secure: false, sameSite: 'lax' }
 }));
 
 app.use(passport.initialize());
@@ -306,16 +308,16 @@ if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-app.get('/auth/discord',
-  (req, res, next) => {
-    const redirect = req.query.redirect;
-    if (redirect && (redirect === '/careers' || redirect.startsWith('/careers'))) {
-      req.session.returnTo = redirect;
-    }
-    next();
-  },
-  passport.authenticate('discord', { scope: ['identify', 'email'] }),
-  (req, res) => { res.send('Redirecting to Discord...'); });
+app.get('/auth/discord', (req, res, next) => {
+  const redirect = req.query.redirect;
+  if (redirect && (redirect === '/careers' || redirect.startsWith('/careers'))) {
+    req.session.returnTo = redirect;
+  }
+  req.session.save(err => {
+    if (err) return next(err);
+    passport.authenticate('discord', { scope: ['identify', 'email'] })(req, res, next);
+  });
+});
 
 app.get('/auth/discord/callback', (req, res, next) => {
   passport.authenticate('discord', (err, user, info) => {
@@ -327,7 +329,7 @@ app.get('/auth/discord/callback', (req, res, next) => {
     if (!user) {
       return res.redirect('/login');
     }
-    req.login(user, loginErr => {
+    req.login(user, { keepSessionInfo: true }, loginErr => {
       if (loginErr) return next(loginErr);
       const returnTo = req.session.returnTo;
       delete req.session.returnTo;
