@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Moderation Staff Application | AeroPulse Studios</title>
+  <base href="/">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -124,7 +125,7 @@
             <p style="color: var(--text-muted); margin: 24px 0;"><strong>Are you ready to submit this?</strong></p>
             <div class="staff-actions">
               <button type="button" class="btn btn-secondary" onclick="prevStep()">&larr; Edit</button>
-              <button type="submit" class="btn btn-primary">Submit application</button>
+              <button type="button" class="btn btn-primary" id="submitBtn" onclick="submitApplication()">Submit application</button>
             </div>
             <p id="submitError" style="color: #f87171; margin-top: 16px;" hidden></p>
           </div>
@@ -133,7 +134,7 @@
     </div>
   </main>
 
-  <script src="js/main.js"></script>
+  <script src="/js/main.js"></script>
   <script>
     const QUESTIONS = [
       { q: "A member is repeatedly spamming in general chat after being asked to stop. What should you do?", options: { A: "Ignore them", B: "Continue reminding them without taking action", C: "Follow the moderation guidelines by issuing the appropriate punishment if necessary", D: "Spam back to get their attention" } },
@@ -255,32 +256,36 @@
       return false;
     }
 
-    document.getElementById('staffForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    async function submitApplication() {
+      const submitBtn = document.getElementById('submitBtn');
       const errorEl = document.getElementById('submitError');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
       errorEl.hidden = true;
 
-      const answers = {};
-      let score = 0;
-      for (let i = 0; i < QUESTIONS.length; i++) {
-        const val = document.querySelector(`input[name="q${i + 1}"]:checked`).value;
-        answers[`q${i + 1}`] = val;
-        if (val === CORRECT_ANSWERS[i]) score++;
-      }
-
-      const body = {
-        robloxUsername: document.getElementById('robloxUsername').value.trim(),
-        discordUsername: currentUser.username,
-        discordId: currentUser.id,
-        email: document.getElementById('email').value.trim(),
-        answers,
-        score,
-        policyAgree: true,
-        dmConsent: true,
-        volunteer: true
-      };
-
       try {
+        const answers = {};
+        let score = 0;
+        for (let i = 0; i < QUESTIONS.length; i++) {
+          const checked = document.querySelector(`input[name="q${i + 1}"]:checked`);
+          if (!checked) throw new Error('Please answer all quiz questions.');
+          const val = checked.value;
+          answers[`q${i + 1}`] = val;
+          if (val === CORRECT_ANSWERS[i]) score++;
+        }
+
+        const body = {
+          robloxUsername: document.getElementById('robloxUsername').value.trim(),
+          discordUsername: currentUser.username,
+          discordId: currentUser.id,
+          email: document.getElementById('email').value.trim(),
+          answers,
+          score,
+          policyAgree: true,
+          dmConsent: true,
+          volunteer: true
+        };
+
         const res = await fetch('/api/staff-application/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -288,17 +293,19 @@
         });
         if (res.ok) {
           window.location.href = '/staff-application/success';
-        } else {
-          const data = await res.json().catch(() => ({}));
-          errorEl.textContent = data.error || 'Failed to submit. Please try again.';
-          errorEl.hidden = false;
+          return;
         }
+        const data = await res.json().catch(() => ({}));
+        errorEl.textContent = data.error || 'Failed to submit. Please try again.';
       } catch (err) {
         console.error(err);
-        errorEl.textContent = 'Network error. Please try again.';
-        errorEl.hidden = false;
+        errorEl.textContent = err.message || 'Network error. Please try again.';
       }
-    });
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit application';
+      errorEl.hidden = false;
+    }
 
     function escapeHtml(text) {
       const div = document.createElement('div');
