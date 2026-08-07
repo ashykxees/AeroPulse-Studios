@@ -173,6 +173,44 @@ async function sendDiscordDM(userId, payload) {
   }
 }
 
+async function postStaffWebhook(application) {
+  const webhookUrl = process.env.STAFF_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log('Staff webhook skipped: STAFF_WEBHOOK_URL not set');
+    return;
+  }
+  const embed = {
+    title: 'New Staff Application Submission',
+    description: `A new moderation staff assessment has been submitted by **${application.applicantName}**.`,
+    color: 0x0ea5e9,
+    timestamp: new Date(application.createdAt).toISOString(),
+    fields: [
+      { name: 'Roblox Username', value: application.robloxUsername || 'N/A', inline: true },
+      { name: 'Discord Username', value: application.discordUsername || 'N/A', inline: true },
+      { name: 'Discord ID', value: application.discordId || 'N/A', inline: true },
+      { name: 'Email', value: application.email || 'N/A', inline: false },
+      { name: 'Agreed to company policy', value: application.policyAgree ? 'Yes' : 'No', inline: true },
+      { name: 'DM consent given', value: application.dmConsent ? 'Yes' : 'No', inline: true },
+      { name: 'Understands volunteer position', value: application.volunteer ? 'Yes' : 'No', inline: true },
+      { name: 'Score', value: `${application.score}/${application.maxScore}`, inline: false }
+    ]
+  };
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+    if (!res.ok) {
+      console.error('Staff webhook failed:', res.status, await res.text());
+    } else {
+      console.log('Staff webhook sent');
+    }
+  } catch (err) {
+    console.error('Staff webhook exception:', err.message);
+  }
+}
+
 function parseDiscordDogMeta(html) {
   const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
   if (!titleMatch) return null;
@@ -311,7 +349,10 @@ passport.deserializeUser((obj, done) => done(null, obj));
 
 app.get('/auth/discord', (req, res, next) => {
   const redirect = req.query.redirect;
-  if (redirect && (redirect === '/careers' || redirect.startsWith('/careers'))) {
+  if (redirect && (
+    redirect === '/careers' || redirect.startsWith('/careers') ||
+    redirect === '/staff-application' || redirect.startsWith('/staff-application')
+  )) {
     req.session.returnTo = redirect;
   }
   req.session.save(err => {
@@ -334,7 +375,10 @@ app.get('/auth/discord/callback', (req, res, next) => {
       if (loginErr) return next(loginErr);
       const returnTo = req.session.returnTo;
       delete req.session.returnTo;
-      const allowApplicant = returnTo && (returnTo === '/careers' || returnTo.startsWith('/careers'));
+      const allowApplicant = returnTo && (
+        returnTo === '/careers' || returnTo.startsWith('/careers') ||
+        returnTo === '/staff-application' || returnTo.startsWith('/staff-application')
+      );
       if (!isWhitelisted(user.id) && !allowApplicant) {
         req.logout(() => {});
         return res.redirect('/landing?error=not-whitelisted');
@@ -450,6 +494,7 @@ app.post('/api/staff-application/submit', ensureAnyAuth, async (req, res) => {
   };
   data.staffApplications.push(application);
   await saveData(data);
+  postStaffWebhook(application).catch(() => {});
   res.json({ success: true, application });
 });
 
@@ -736,8 +781,14 @@ app.get('/games', (req, res) => res.sendFile(path.join(__dirname, 'games.html'))
 app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'team.html')));
 app.get('/careers', (req, res) => res.sendFile(path.join(__dirname, 'careers.html')));
 app.get('/company-policy', (req, res) => res.sendFile(path.join(__dirname, 'company-policy.html')));
-app.get('/staff-application', (req, res) => res.sendFile(path.join(__dirname, 'staff-application.html')));
-app.get('/staff-application/success', (req, res) => res.sendFile(path.join(__dirname, 'staff-application-success.html')));
+app.get('/staff-application', (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect('/auth/discord?redirect=/staff-application');
+  res.sendFile(path.join(__dirname, 'staff-application.html'));
+});
+app.get('/staff-application/success', (req, res) => {
+  if (!req.isAuthenticated()) return res.redirect('/auth/discord?redirect=/staff-application');
+  res.sendFile(path.join(__dirname, 'staff-application-success.html'));
+});
 app.get('/contact', (req, res) => res.redirect(301, '/landing'));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
