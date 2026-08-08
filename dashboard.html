@@ -522,6 +522,12 @@
 
     let applicationData = [];
 
+    async function deleteApplication(id) {
+      if (!confirm('Delete this application?')) return;
+      const res = await fetch(`/api/admin/applications/${id}`, { method: 'DELETE' });
+      if (res.ok) loadApplications();
+    }
+
     function viewApplication(id) {
       const app = applicationData.find(a => a.id === id);
       if (!app) return;
@@ -576,7 +582,10 @@
             <td>${escapeHtml(applicant)}</td>
             <td>${submitted}</td>
             <td>${escapeHtml(app.status || 'pending')}</td>
-            <td><button class="btn btn-primary btn-sm" onclick="viewApplication('${escapeHtml(app.id)}')">View</button></td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick="viewApplication('${escapeHtml(app.id)}')">View</button>
+              <button class="btn btn-danger btn-sm" style="margin-left: 8px;" onclick="deleteApplication('${escapeHtml(app.id)}')">Delete</button>
+            </td>
           `;
           tbody.appendChild(tr);
         }
@@ -599,6 +608,12 @@
     ];
 
     let staffApplicationData = [];
+
+    async function deleteStaffApplication(id) {
+      if (!confirm('Delete this staff application?')) return;
+      const res = await fetch(`/api/admin/staff-applications/${id}`, { method: 'DELETE' });
+      if (res.ok) loadStaffApplications();
+    }
 
     function viewStaffApplication(id) {
       const app = staffApplicationData.find(a => a.id === id);
@@ -672,7 +687,10 @@
             <td>${escapeHtml(app.robloxUsername)}</td>
             <td>${app.score}/${app.maxScore}</td>
             <td>${submitted}</td>
-            <td><button class="btn btn-primary btn-sm" onclick="viewStaffApplication('${escapeHtml(app.id)}')">View</button></td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick="viewStaffApplication('${escapeHtml(app.id)}')">View</button>
+              <button class="btn btn-danger btn-sm" style="margin-left: 8px;" onclick="deleteStaffApplication('${escapeHtml(app.id)}')">Delete</button>
+            </td>
           `;
           tbody.appendChild(tr);
         }

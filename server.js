@@ -443,6 +443,13 @@ app.get('/api/admin/applications', ensureAdmin, async (req, res) => {
   res.json(enriched);
 });
 
+app.delete('/api/admin/applications/:id', ensureAdmin, async (req, res) => {
+  const data = loadData();
+  data.applications = data.applications.filter(a => a.id !== req.params.id);
+  await saveData(data);
+  res.json({ success: true });
+});
+
 const STAFF_QUIZ_ANSWERS = ['C','B','B','B','A','B','B','B','A','A'];
 
 app.post('/api/staff-application/submit', ensureAnyAuth, async (req, res) => {
@@ -497,6 +504,13 @@ app.get('/api/admin/staff-applications', ensureAdmin, async (req, res) => {
     return { ...a, applicant: user || { id: a.applicantId, username: a.applicantName } };
   }));
   res.json(enriched);
+});
+
+app.delete('/api/admin/staff-applications/:id', ensureAdmin, async (req, res) => {
+  const data = loadData();
+  data.staffApplications = data.staffApplications.filter(a => a.id !== req.params.id);
+  await saveData(data);
+  res.json({ success: true });
 });
 
 function userEarnings(data, userId) {

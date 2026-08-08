@@ -267,6 +267,16 @@ img {
   background: var(--surface-3);
 }
 
+.btn-danger {
+  background: #f87171;
+  color: #111;
+}
+
+.btn-danger:hover {
+  background: #ef4444;
+  transform: translateY(-2px);
+}
+
 /* Section */
 .section {
   padding: 100px 0;
