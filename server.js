@@ -62,6 +62,17 @@ async function persistJSON() {
   saveJSON(WHITELIST_FILE, state.whitelist);
 }
 
+function buildWhitelist(template, persisted, data) {
+  const equityIds = Object.keys(data.djEmpire?.equity || {});
+  const whitelist = template.map(u => ({ ...u }));
+  for (const id of equityIds) {
+    if (!whitelist.find(u => u.id === id)) {
+      whitelist.push({ id });
+    }
+  }
+  return whitelist;
+}
+
 async function initStorage() {
   if (process.env.DATABASE_URL) {
     try {
@@ -75,14 +86,8 @@ async function initStorage() {
       const data = dataRow.rows[0]?.value || {};
       ensureDataShape(data);
       const templateWhitelist = readWhitelist(WHITELIST_TEMPLATE);
-      const whitelist = whitelistRow.rows[0]?.value || templateWhitelist;
-      // Merge role updates from the repo template without overwriting other changes
-      for (const templateUser of templateWhitelist) {
-        const existing = whitelist.find(u => u.id === templateUser.id);
-        if (existing && templateUser.role && !existing.role) {
-          existing.role = templateUser.role;
-        }
-      }
+      const persistedWhitelist = whitelistRow.rows[0]?.value || [];
+      const whitelist = buildWhitelist(templateWhitelist, persistedWhitelist, data);
       state = { data, whitelist, persist: persistDB };
       await state.persist();
       console.log('Postgres storage initialized');
@@ -97,19 +102,9 @@ async function initStorage() {
   ensureDataShape(data);
   const existingWhitelist = readWhitelist(WHITELIST_FILE);
   const templateWhitelist = readWhitelist(WHITELIST_TEMPLATE);
-  const whitelist = existingWhitelist.length ? existingWhitelist : templateWhitelist;
-  // Merge role updates from the repo template without overwriting other changes
-  for (const templateUser of templateWhitelist) {
-    const existing = whitelist.find(u => u.id === templateUser.id);
-    if (existing && templateUser.role && !existing.role) {
-      existing.role = templateUser.role;
-    }
-  }
+  const whitelist = buildWhitelist(templateWhitelist, existingWhitelist, data);
   state = { data, whitelist, persist: persistJSON };
   await state.persist();
-  if (!existingWhitelist.length && fs.existsSync(WHITELIST_TEMPLATE)) {
-    fs.copyFileSync(WHITELIST_TEMPLATE, WHITELIST_FILE);
-  }
   console.log('JSON file storage initialized');
 }
 
@@ -262,10 +257,6 @@ async function fetchDiscordUser(userId) {
   const fallback = await fetchDiscordDogUser(userId);
   if (fallback) discordUserCache.set(userId, fallback);
   return fallback;
-}
-
-function saveWhitelist(list) {
-  saveJSON(WHITELIST_FILE, list);
 }
 
 function isWhitelisted(id) {
