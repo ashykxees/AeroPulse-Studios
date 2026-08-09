@@ -480,7 +480,21 @@ img {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.team-tag {
+  display: inline-block;
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 12px;
   margin-bottom: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.25);
 }
 
 .team-bio {
