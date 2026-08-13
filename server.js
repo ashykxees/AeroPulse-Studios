@@ -406,28 +406,51 @@ app.get('/api/session', ensureAnyAuth, (req, res) => {
 });
 
 app.post('/api/careers/apply', ensureAnyAuth, async (req, res) => {
-  const { position, email, portfolio, about, why } = req.body;
-  if (!position || !email || !about || !why) {
-    return res.status(400).json({ error: 'Position, email, about and why are required' });
+  const { position, email, portfolio, about, why, answers, expectations } = req.body;
+  if (!position || !email) {
+    return res.status(400).json({ error: 'Position and email are required' });
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: 'Invalid email' });
   }
   const data = loadData();
-  const application = {
+  const base = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
     applicantId: req.user.id,
     applicantName: req.user.username,
     position,
     name: req.user.username,
     email: email.trim().toLowerCase().slice(0, 120),
-    portfolio: (portfolio || '').trim().slice(0, 500),
-    about: about.trim().slice(0, 2000),
-    why: why.trim().slice(0, 2000),
     status: 'pending',
     createdAt: Date.now()
   };
+
+  let application;
+  if (position === 'Moderation Officer') {
+    if (!Array.isArray(answers) || answers.length !== 10 || answers.some(a => typeof a !== 'string' || !a.trim())) {
+      return res.status(400).json({ error: 'All 10 questions must be answered' });
+    }
+    if (!Array.isArray(expectations) || expectations.length !== 5 || expectations.some(e => e !== true)) {
+      return res.status(400).json({ error: 'You must agree to all expectations' });
+    }
+    application = {
+      ...base,
+      answers: answers.map(a => a.trim().slice(0, 2000)),
+      expectations: expectations.map((v, i) => v)
+    };
+  } else {
+    if (!about || !why) {
+      return res.status(400).json({ error: 'About and why are required' });
+    }
+    application = {
+      ...base,
+      portfolio: (portfolio || '').trim().slice(0, 500),
+      about: about.trim().slice(0, 2000),
+      why: why.trim().slice(0, 2000)
+    };
+  }
+
   data.applications.push(application);
   await saveData(data);
   res.json({ success: true, application });

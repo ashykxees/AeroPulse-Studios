@@ -263,6 +263,27 @@
 
   <script src="js/main.js"></script>
   <script>
+    const MODERATION_QUESTIONS = [
+      "Why are you interested in becoming a Moderation Officer at AeroPulse Studios?",
+      "What qualities do you believe make a good moderator?",
+      "A member is repeatedly breaking a rule after receiving a warning. What would you do?",
+      "You notice your friend breaking a rule. How would you handle the situation?",
+      "Two members are arguing and both begin insulting each other. How would you approach the situation?",
+      "A member reports another user but provides very little evidence. What would you do?",
+      "What would you do if you accidentally issued an incorrect punishment?",
+      "A user becomes upset after receiving a punishment and begins arguing with you. How would you respond?",
+      "What would you do if you were unsure whether a situation required moderation action?",
+      "Why should AeroPulse Studios trust you with moderation responsibilities?"
+    ];
+
+    const MODERATION_EXPECTATIONS = [
+      "Do you agree to follow the expectations?",
+      "Do you understand that we have permission to remove your permissions and role at any time regarding team discussion?",
+      "Do you give us consent to DM you regarding this application's result?",
+      "Do you understand following the completion of this application you are subject to a voice recording verifying your age?",
+      "Do you agree to follow our company policy?"
+    ];
+
     async function loadDashboard() {
       try {
         const [meRes, equityRes] = await Promise.all([fetch('/api/me'), fetch('/api/equity')]);
@@ -535,20 +556,50 @@
       const submitted = new Date(app.createdAt).toLocaleString();
       document.getElementById('appDetailPosition').textContent = app.position;
       document.getElementById('appDetailMeta').textContent = `${escapeHtml(app.name)} • ${escapeHtml(app.email)} • ${escapeHtml(applicant)} • ${submitted}`;
-      document.getElementById('appDetailBody').innerHTML = `
-        <div class="app-detail-row">
-          <label>Portfolio / Work</label>
-          ${app.portfolio ? `<p><a href="${escapeHtml(app.portfolio)}" target="_blank" rel="noopener">${escapeHtml(app.portfolio)}</a></p>` : '<p style="color:var(--text-muted);">Not provided</p>'}
-        </div>
-        <div class="app-detail-row">
-          <label>About You</label>
-          <p>${escapeHtml(app.about).replace(/\n/g, '<br>')}</p>
-        </div>
-        <div class="app-detail-row">
-          <label>Why should we select you?</label>
-          <p>${escapeHtml(app.why).replace(/\n/g, '<br>')}</p>
-        </div>
-      `;
+
+      let bodyHtml = '';
+      if (app.position === 'Moderation Officer') {
+        bodyHtml += '<div class="app-detail-row"><label>Application Questions</label></div>';
+        if (app.answers && app.answers.length) {
+          for (let i = 0; i < MODERATION_QUESTIONS.length; i++) {
+            const answer = app.answers[i] || '—';
+            bodyHtml += `
+              <div class="app-detail-row" style="margin-top: 16px;">
+                <label>Q${i + 1}</label>
+                <p style="color: var(--text-muted); margin-bottom: 8px;">${escapeHtml(MODERATION_QUESTIONS[i])}</p>
+                <p>${escapeHtml(answer).replace(/\n/g, '<br>')}</p>
+              </div>
+            `;
+          }
+        }
+        bodyHtml += '<div class="app-detail-row" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);"><label>Expectations</label></div>';
+        for (let i = 0; i < MODERATION_EXPECTATIONS.length; i++) {
+          const agreed = app.expectations && app.expectations[i] === true ? 'Agreed' : 'Not agreed';
+          bodyHtml += `
+            <div class="app-detail-row" style="margin-top: 12px;">
+              <p style="color: var(--text-muted); margin-bottom: 4px;">${escapeHtml(MODERATION_EXPECTATIONS[i])}</p>
+              <p>${agreed}</p>
+            </div>
+          `;
+        }
+      } else {
+        bodyHtml = `
+          <div class="app-detail-row">
+            <label>Portfolio / Work</label>
+            ${app.portfolio ? `<p><a href="${escapeHtml(app.portfolio)}" target="_blank" rel="noopener">${escapeHtml(app.portfolio)}</a></p>` : '<p style="color:var(--text-muted);">Not provided</p>'}
+          </div>
+          <div class="app-detail-row">
+            <label>About You</label>
+            <p>${escapeHtml(app.about).replace(/\n/g, '<br>')}</p>
+          </div>
+          <div class="app-detail-row">
+            <label>Why should we select you?</label>
+            <p>${escapeHtml(app.why).replace(/\n/g, '<br>')}</p>
+          </div>
+        `;
+      }
+
+      document.getElementById('appDetailBody').innerHTML = bodyHtml;
       document.getElementById('appDetailModal').classList.add('open');
     }
 

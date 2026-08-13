@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Careers | AeroPulse Studios</title>
-  <meta name="description" content="Join AeroPulse Studios. Open QA Tester and QA Testing Lead roles.">
+  <meta name="description" content="Join AeroPulse Studios. Open QA and Moderation Officer roles.">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -41,7 +41,7 @@
       <div class="container">
         <span class="hero-label">Careers</span>
         <h1 class="display">Join our <span>team.</span></h1>
-        <p>Help build the next generation of original game worlds. We're looking for sharp eyes and clear communicators to shape polished player experiences.</p>
+        <p>Help build the next generation of original game worlds. We're looking for sharp eyes, clear communicators, and level-headed moderators to shape polished player experiences.</p>
         <div class="hero-actions">
           <a href="#open-positions" class="btn btn-primary">View open roles &rarr;</a>
         </div>
@@ -101,6 +101,24 @@
             </div>
             <button class="btn btn-primary" data-position="QA Testing Lead">Apply now</button>
           </article>
+
+          <article class="career-card">
+            <span class="career-badge">Hiring</span>
+            <h3 class="career-title">Moderation Officer</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">As a Moderation Officer, you will help maintain a safe, welcoming, and professional environment across AeroPulse Studios. Moderation Officers are responsible for monitoring communities, responding to reports, enforcing rules fairly, assisting members, and handling situations professionally. Officers are expected to remain active, respectful, unbiased, and reliable while representing AeroPulse Studios.</p>
+            <ul class="career-list">
+              <li>Monitor community spaces and respond to reports</li>
+              <li>Enforce rules fairly, consistently, and without bias</li>
+              <li>Assist members and de-escalate conflicts</li>
+              <li>Document actions and communicate with leadership</li>
+              <li>Represent AeroPulse Studios professionally at all times</li>
+            </ul>
+            <div class="career-meta">
+              <span>Remote</span>
+              <span>Full-time</span>
+            </div>
+            <button class="btn btn-primary" data-position="Moderation Officer">Apply now</button>
+          </article>
         </div>
       </div>
     </section>
@@ -125,18 +143,21 @@
           <label for="applyEmail">Email</label>
           <input type="email" id="applyEmail" name="email" required>
         </div>
-        <div class="form-group">
-          <label for="applyPortfolio">Portfolio / profile link</label>
-          <input type="text" id="applyPortfolio" name="portfolio" placeholder="https://">
+        <div id="qaFields">
+          <div class="form-group">
+            <label for="applyPortfolio">Portfolio / profile link</label>
+            <input type="text" id="applyPortfolio" name="portfolio" placeholder="https://">
+          </div>
+          <div class="form-group">
+            <label for="applyAbout">About you</label>
+            <textarea id="applyAbout" name="about" rows="4" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="applyWhy">Why should we select you?</label>
+            <textarea id="applyWhy" name="why" rows="4" required></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="applyAbout">About you</label>
-          <textarea id="applyAbout" name="about" rows="4" required></textarea>
-        </div>
-        <div class="form-group">
-          <label for="applyWhy">Why should we select you?</label>
-          <textarea id="applyWhy" name="why" rows="4" required></textarea>
-        </div>
+        <div id="moderationFields" hidden></div>
         <button type="submit" class="btn btn-primary">Submit application</button>
         <p id="applyError" style="color: #ef4444; margin-top: 12px; font-size: 0.9rem;" hidden></p>
         <p id="applySuccess" style="color: #22d3ee; margin-top: 12px; font-size: 0.9rem;" hidden>Application submitted. We'll be in touch soon.</p>
@@ -187,6 +208,27 @@
 
   <script src="js/main.js"></script>
   <script>
+    const MODERATION_QUESTIONS = [
+      "Why are you interested in becoming a Moderation Officer at AeroPulse Studios?",
+      "What qualities do you believe make a good moderator?",
+      "A member is repeatedly breaking a rule after receiving a warning. What would you do?",
+      "You notice your friend breaking a rule. How would you handle the situation?",
+      "Two members are arguing and both begin insulting each other. How would you approach the situation?",
+      "A member reports another user but provides very little evidence. What would you do?",
+      "What would you do if you accidentally issued an incorrect punishment?",
+      "A user becomes upset after receiving a punishment and begins arguing with you. How would you respond?",
+      "What would you do if you were unsure whether a situation required moderation action?",
+      "Why should AeroPulse Studios trust you with moderation responsibilities?"
+    ];
+
+    const MODERATION_EXPECTATIONS = [
+      "Do you agree to follow the expectations?",
+      "Do you understand that we have permission to remove your permissions and role at any time regarding team discussion?",
+      "Do you give us consent to DM you regarding this application's result?",
+      "Do you understand following the completion of this application you are subject to a voice recording verifying your age?",
+      "Do you agree to follow our company policy?"
+    ];
+
     const modal = document.getElementById('applyModal');
     const closeModalBtn = document.getElementById('closeModal');
     const applyForm = document.getElementById('applyForm');
@@ -195,6 +237,8 @@
     const positionField = document.getElementById('positionField');
     const applyError = document.getElementById('applyError');
     const applySuccess = document.getElementById('applySuccess');
+    const qaFields = document.getElementById('qaFields');
+    const moderationFields = document.getElementById('moderationFields');
     let currentUser = null;
 
     async function loadSession() {
@@ -212,6 +256,27 @@
       return false;
     }
 
+    function renderModerationFields() {
+      moderationFields.innerHTML = '<p style="color: var(--text-muted); margin-bottom: 16px;">Applicants should provide thoughtful, honest answers. We are looking for <strong>professionalism, fairness, maturity, communication skills, and good judgment</strong> rather than simply memorized answers.</p>';
+      MODERATION_QUESTIONS.forEach((q, i) => {
+        moderationFields.innerHTML += `
+          <div class="form-group">
+            <label for="modQ${i}">${i + 1}. ${q}</label>
+            <textarea id="modQ${i}" name="modQ${i}" rows="4" required></textarea>
+          </div>
+        `;
+      });
+      moderationFields.innerHTML += '<p style="color: var(--text-muted); margin: 24px 0 12px; font-weight: 600;">Expectations</p>';
+      MODERATION_EXPECTATIONS.forEach((q, i) => {
+        moderationFields.innerHTML += `
+          <label class="form-group" style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+            <input type="checkbox" id="modE${i}" name="modE${i}" value="agree" required style="margin-top: 4px;">
+            <span style="text-align: left;">${q}</span>
+          </label>
+        `;
+      });
+    }
+
     async function openModal(position) {
       positionField.value = position;
       modalTitle.textContent = `Apply — ${position}`;
@@ -220,6 +285,15 @@
       applyForm.reset();
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
+
+      if (position === 'Moderation Officer') {
+        qaFields.hidden = true;
+        moderationFields.hidden = false;
+        renderModerationFields();
+      } else {
+        qaFields.hidden = false;
+        moderationFields.hidden = true;
+      }
 
       const loggedIn = await loadSession();
       if (loggedIn) {
@@ -252,14 +326,44 @@
       e.preventDefault();
       applyError.hidden = true;
       const form = e.target;
-      const body = {
-        position: form.position.value,
+      const position = form.position.value;
+      let body = {
+        position,
         name: form.name.value.trim(),
-        email: form.email.value.trim(),
-        portfolio: form.portfolio.value.trim(),
-        about: form.about.value.trim(),
-        why: form.why.value.trim()
+        email: form.email.value.trim()
       };
+
+      if (position === 'Moderation Officer') {
+        const answers = [];
+        for (let i = 0; i < MODERATION_QUESTIONS.length; i++) {
+          const val = document.getElementById(`modQ${i}`).value.trim();
+          if (!val) {
+            applyError.textContent = 'Please answer every question.';
+            applyError.hidden = false;
+            return;
+          }
+          answers.push(val);
+        }
+        const expectations = [];
+        for (let i = 0; i < MODERATION_EXPECTATIONS.length; i++) {
+          expectations.push(document.getElementById(`modE${i}`).checked);
+        }
+        if (expectations.some(v => !v)) {
+          applyError.textContent = 'You must agree to all expectations.';
+          applyError.hidden = false;
+          return;
+        }
+        body.answers = answers;
+        body.expectations = expectations;
+      } else {
+        body = {
+          ...body,
+          portfolio: form.portfolio.value.trim(),
+          about: form.about.value.trim(),
+          why: form.why.value.trim()
+        };
+      }
+
       const res = await fetch('/api/careers/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
