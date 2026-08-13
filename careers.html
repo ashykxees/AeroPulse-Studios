@@ -280,9 +280,9 @@
       moderationFields.innerHTML = '<h3 style="font-size: 1.1rem; margin-bottom: 12px;">Expectations</h3><p style="color: var(--text-muted); margin-bottom: 16px;">Please agree to all expectations to proceed.</p>';
       MODERATION_EXPECTATIONS.forEach((q, i) => {
         moderationFields.innerHTML += `
-          <label class="form-group" style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-            <input type="checkbox" id="modE${i}" name="modE${i}" value="agree" required style="margin-top: 4px;">
-            <span style="text-align: left;">${q}</span>
+          <label class="checkbox" style="cursor: pointer; text-align: left;">
+            <input type="checkbox" id="modE${i}" name="modE${i}" value="agree" required>
+            <span>${q}</span>
           </label>
         `;
       });
