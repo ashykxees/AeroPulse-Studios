@@ -207,12 +207,25 @@ async function postStaffWebhook(application) {
 }
 
 async function postCareersWebhook(application) {
+  const MODERATION_QUESTIONS = [
+    'Why are you interested in becoming a Moderation Officer at AeroPulse Studios?',
+    'What qualities do you believe make a good moderator?',
+    'A member is repeatedly breaking a rule after receiving a warning. What would you do?',
+    'You notice your friend breaking a rule. How would you handle the situation?',
+    'Two members are arguing and both begin insulting each other. How would you approach the situation?',
+    'A member reports another user but provides very little evidence. What would you do?',
+    'What would you do if you accidentally issued an incorrect punishment?',
+    'A user becomes upset after receiving a punishment and begins arguing with you. How would you respond?',
+    'What would you do if you were unsure whether a situation required moderation action?',
+    'Why should AeroPulse Studios trust you with moderation responsibilities?'
+  ];
   const webhookUrl = process.env.CAREERS_WEBHOOK_URL || process.env.STAFF_WEBHOOK_URL;
   if (!webhookUrl) {
     console.log('Careers webhook skipped: no webhook URL set');
     return;
   }
-  const truncate = (text) => text && text.length > 1000 ? text.slice(0, 997) + '...' : (text || 'N/A');
+  const truncate = (text, max = 1000) => text && text.length > max ? text.slice(0, max - 3) + '...' : (text || 'N/A');
+  const shortField = (text, max = 250) => text && text.length > max ? text.slice(0, max - 3) + '...' : (text || 'N/A');
   const fields = [
     { name: 'Applicant', value: application.applicantName || 'N/A', inline: true },
     { name: 'Position', value: application.position || 'N/A', inline: true },
@@ -221,7 +234,8 @@ async function postCareersWebhook(application) {
   if (application.position === 'Moderation Officer') {
     if (application.answers && application.answers.length) {
       for (let i = 0; i < application.answers.length; i++) {
-        fields.push({ name: `Q${i + 1}`, value: truncate(application.answers[i]), inline: false });
+        const question = MODERATION_QUESTIONS[i] || `Question ${i + 1}`;
+        fields.push({ name: shortField(question), value: truncate(application.answers[i]), inline: false });
       }
     }
     if (application.expectations && application.expectations.length) {
@@ -233,7 +247,8 @@ async function postCareersWebhook(application) {
         'Agree to company policy'
       ];
       for (let i = 0; i < application.expectations.length; i++) {
-        fields.push({ name: `Expectation ${i + 1}`, value: application.expectations[i] ? 'Agreed' : 'Not agreed', inline: true });
+        const label = expectationLabels[i] || `Expectation ${i + 1}`;
+        fields.push({ name: shortField(label), value: application.expectations[i] ? 'Agreed' : 'Not agreed', inline: true });
       }
     }
   } else {
