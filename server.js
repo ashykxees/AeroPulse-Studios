@@ -206,6 +206,64 @@ async function postStaffWebhook(application) {
   }
 }
 
+async function postCareersWebhook(application) {
+  const webhookUrl = process.env.CAREERS_WEBHOOK_URL || process.env.STAFF_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log('Careers webhook skipped: no webhook URL set');
+    return;
+  }
+  const truncate = (text) => text && text.length > 1000 ? text.slice(0, 997) + '...' : (text || 'N/A');
+  const fields = [
+    { name: 'Applicant', value: application.applicantName || 'N/A', inline: true },
+    { name: 'Position', value: application.position || 'N/A', inline: true },
+    { name: 'Email', value: application.email || 'N/A', inline: false }
+  ];
+  if (application.position === 'Moderation Officer') {
+    if (application.answers && application.answers.length) {
+      for (let i = 0; i < application.answers.length; i++) {
+        fields.push({ name: `Q${i + 1}`, value: truncate(application.answers[i]), inline: false });
+      }
+    }
+    if (application.expectations && application.expectations.length) {
+      const expectationLabels = [
+        'Agree to expectations',
+        'Permission to remove role',
+        'Consent to DM',
+        'Voice recording age verification',
+        'Agree to company policy'
+      ];
+      for (let i = 0; i < application.expectations.length; i++) {
+        fields.push({ name: `Expectation ${i + 1}`, value: application.expectations[i] ? 'Agreed' : 'Not agreed', inline: true });
+      }
+    }
+  } else {
+    fields.push({ name: 'Portfolio / Profile', value: truncate(application.portfolio), inline: false });
+    fields.push({ name: 'About You', value: truncate(application.about), inline: false });
+    fields.push({ name: 'Why should we select you?', value: truncate(application.why), inline: false });
+  }
+  const embed = {
+    title: `New Career Application — ${application.position}`,
+    description: `A new application has been submitted by **${application.applicantName}**.`,
+    color: 0x22d3ee,
+    timestamp: new Date(application.createdAt).toISOString(),
+    fields
+  };
+  try {
+    const res = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] })
+    });
+    if (!res.ok) {
+      console.error('Careers webhook failed:', res.status, await res.text());
+    } else {
+      console.log('Careers webhook sent');
+    }
+  } catch (err) {
+    console.error('Careers webhook exception:', err.message);
+  }
+}
+
 function parseDiscordDogMeta(html) {
   const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
   if (!titleMatch) return null;
@@ -453,6 +511,7 @@ app.post('/api/careers/apply', ensureAnyAuth, async (req, res) => {
 
   data.applications.push(application);
   await saveData(data);
+  postCareersWebhook(application).catch(() => {});
   res.json({ success: true, application });
 });
 
