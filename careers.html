@@ -161,8 +161,11 @@
         <div id="moderationFields" hidden></div>
         <button type="submit" class="btn btn-primary">Submit application</button>
         <p id="applyError" style="color: #ef4444; margin-top: 12px; font-size: 0.9rem;" hidden></p>
-        <p id="applySuccess" style="color: #22d3ee; margin-top: 12px; font-size: 0.9rem;" hidden>Application submitted. We'll be in touch soon.</p>
       </form>
+      <div id="applySuccess" style="text-align: center; padding: 24px 0;" hidden>
+        <p style="color: #22d3ee; font-size: 1.1rem; font-weight: 600; margin-bottom: 16px;">Application submitted. We'll be in touch soon.</p>
+        <button type="button" class="btn btn-secondary" onclick="closeModal()">Close</button>
+      </div>
     </div>
   </div>
 
@@ -299,6 +302,16 @@
       }
     }
 
+    function setQaRequired(enabled) {
+      document.getElementById('applyPortfolio').disabled = !enabled;
+      const about = document.getElementById('applyAbout');
+      const why = document.getElementById('applyWhy');
+      about.disabled = !enabled;
+      about.required = enabled;
+      why.disabled = !enabled;
+      why.required = enabled;
+    }
+
     async function openModal(position) {
       positionField.value = position;
       modalTitle.textContent = `Apply — ${position}`;
@@ -314,10 +327,12 @@
       if (position === 'Moderation Officer') {
         qaFields.hidden = true;
         moderationFields.hidden = false;
+        setQaRequired(false);
         renderModerationFields(1);
       } else {
         qaFields.hidden = false;
         moderationFields.hidden = true;
+        setQaRequired(true);
       }
 
       const loggedIn = await loadSession();
