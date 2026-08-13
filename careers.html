@@ -240,7 +240,10 @@
     const applySuccess = document.getElementById('applySuccess');
     const qaFields = document.getElementById('qaFields');
     const moderationFields = document.getElementById('moderationFields');
+    const submitBtn = applyForm.querySelector('button[type="submit"]');
     let currentUser = null;
+    let moderationAnswers = [];
+    let moderationStep = 1;
 
     async function loadSession() {
       try {
@@ -257,7 +260,7 @@
       return false;
     }
 
-    function renderModerationFields() {
+    function renderModerationQuestions() {
       moderationFields.innerHTML = '<p style="color: var(--text-muted); margin-bottom: 16px;">Applicants should provide thoughtful, honest answers. We are looking for <strong>professionalism, fairness, maturity, communication skills, and good judgment</strong> rather than simply memorized answers.</p>';
       MODERATION_QUESTIONS.forEach((q, i) => {
         moderationFields.innerHTML += `
@@ -267,7 +270,14 @@
           </div>
         `;
       });
-      moderationFields.innerHTML += '<p style="color: var(--text-muted); margin: 24px 0 12px; font-weight: 600;">Expectations</p>';
+      moderationFields.innerHTML += `
+        <button type="button" id="modNextBtn" class="btn btn-primary" style="margin-top: 8px;">Next &rarr;</button>
+      `;
+      submitBtn.hidden = true;
+    }
+
+    function renderModerationExpectations() {
+      moderationFields.innerHTML = '<h3 style="font-size: 1.1rem; margin-bottom: 12px;">Expectations</h3><p style="color: var(--text-muted); margin-bottom: 16px;">Please agree to all expectations to proceed.</p>';
       MODERATION_EXPECTATIONS.forEach((q, i) => {
         moderationFields.innerHTML += `
           <label class="form-group" style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
@@ -276,6 +286,17 @@
           </label>
         `;
       });
+      submitBtn.hidden = false;
+      submitBtn.textContent = 'Submit application';
+    }
+
+    function renderModerationFields(step) {
+      moderationStep = step;
+      if (step === 1) {
+        renderModerationQuestions();
+      } else {
+        renderModerationExpectations();
+      }
     }
 
     async function openModal(position) {
@@ -284,13 +305,16 @@
       applyError.hidden = true;
       applySuccess.hidden = true;
       applyForm.reset();
+      moderationAnswers = [];
+      submitBtn.hidden = false;
+      submitBtn.textContent = 'Submit application';
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
 
       if (position === 'Moderation Officer') {
         qaFields.hidden = true;
         moderationFields.hidden = false;
-        renderModerationFields();
+        renderModerationFields(1);
       } else {
         qaFields.hidden = false;
         moderationFields.hidden = true;
@@ -323,6 +347,24 @@
       if (e.target === modal) closeModal();
     });
 
+    moderationFields.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'modNextBtn') {
+        const answers = [];
+        for (let i = 0; i < MODERATION_QUESTIONS.length; i++) {
+          const val = document.getElementById(`modQ${i}`).value.trim();
+          if (!val) {
+            applyError.textContent = 'Please answer every question.';
+            applyError.hidden = false;
+            return;
+          }
+          answers.push(val);
+        }
+        moderationAnswers = answers;
+        applyError.hidden = true;
+        renderModerationFields(2);
+      }
+    });
+
     applyForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       applyError.hidden = true;
@@ -335,16 +377,7 @@
       };
 
       if (position === 'Moderation Officer') {
-        const answers = [];
-        for (let i = 0; i < MODERATION_QUESTIONS.length; i++) {
-          const val = document.getElementById(`modQ${i}`).value.trim();
-          if (!val) {
-            applyError.textContent = 'Please answer every question.';
-            applyError.hidden = false;
-            return;
-          }
-          answers.push(val);
-        }
+        if (moderationStep !== 2) return;
         const expectations = [];
         for (let i = 0; i < MODERATION_EXPECTATIONS.length; i++) {
           expectations.push(document.getElementById(`modE${i}`).checked);
@@ -354,7 +387,7 @@
           applyError.hidden = false;
           return;
         }
-        body.answers = answers;
+        body.answers = moderationAnswers;
         body.expectations = expectations;
       } else {
         body = {
