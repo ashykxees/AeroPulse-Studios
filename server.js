@@ -20,6 +20,10 @@ const WHITELIST_FILE = path.join(DATA_DIR, 'whitelist.json');
 const WHITELIST_TEMPLATE = path.join(__dirname, 'whitelist.json');
 
 const discordUserCache = new Map();
+const PARTNERS = [
+  { id: '1324700515585491036', name: 'Jackitech' },
+  { id: '1472286191045967985', name: 'Nate\'s Commissions' }
+];
 let state = null;
 let pool = null;
 
@@ -132,6 +136,82 @@ function getBotToken() {
   // Bot tokens have 3 dot-separated parts; OAuth client secrets do not.
   if (secret && secret.split('.').length === 3) return secret;
   return null;
+}
+
+function getPartnerInviteCode(partner) {
+  const envName = `PARTNER_${partner.id}_INVITE`;
+  const envValue = process.env[envName];
+  if (!envValue) return null;
+  return envValue.replace(/^https?:\/\/discord\.(gg|com)\/invite\//, '').replace(/\/$/, '');
+}
+
+function getPartnerIconUrl(name) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0ea5e9&color=fff&size=256`;
+}
+
+function getGuildIconUrl(guildId, icon) {
+  if (!icon) return null;
+  const ext = icon.startsWith('a_') ? 'gif' : 'png';
+  return `https://cdn.discordapp.com/icons/${guildId}/${icon}.${ext}?size=256`;
+}
+
+async function fetchPartnerData(partner) {
+  const result = { id: partner.id, name: partner.name, iconUrl: getPartnerIconUrl(partner.name), inviteUrl: null, members: null, online: null };
+  const code = getPartnerInviteCode(partner);
+  if (code) {
+    try {
+      const res = await fetch(`https://discord.com/api/v10/invites/${encodeURIComponent(code)}?with_counts=true`);
+      if (res.ok) {
+        const data = await res.json();
+        const guild = data.guild;
+        if (guild) {
+          result.name = guild.name || result.name;
+          const iconUrl = getGuildIconUrl(guild.id, guild.icon);
+          if (iconUrl) result.iconUrl = iconUrl;
+          result.inviteUrl = `https://discord.gg/${data.code}`;
+          result.members = data.approximate_member_count;
+          result.online = data.approximate_presence_count;
+          return result;
+        }
+      } else {
+        console.log('Partner invite fetch failed:', res.status, await res.text());
+      }
+    } catch (err) {
+      console.error('Partner invite fetch error:', err.message);
+    }
+  }
+
+  const token = getBotToken();
+  if (token) {
+    try {
+      const res = await fetch(`https://discord.com/api/v10/guilds/${partner.id}?with_counts=true`, {
+        headers: { Authorization: `Bot ${token}` }
+      });
+      if (res.ok) {
+        const guild = await res.json();
+        result.name = guild.name || result.name;
+        const iconUrl = getGuildIconUrl(guild.id, guild.icon);
+        if (iconUrl) result.iconUrl = iconUrl;
+        result.members = guild.approximate_member_count;
+        result.online = guild.approximate_presence_count;
+        if (guild.vanity_url_code) {
+          result.inviteUrl = `https://discord.gg/${guild.vanity_url_code}`;
+        }
+        if (!result.inviteUrl) {
+          try {
+            const widgetRes = await fetch(`https://discord.com/api/v10/guilds/${partner.id}/widget.json`);
+            if (widgetRes.ok) {
+              const widget = await widgetRes.json();
+              if (widget.instant_invite) result.inviteUrl = widget.instant_invite;
+            }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.error('Partner guild fetch error:', err.message);
+    }
+  }
+  return result;
 }
 
 async function sendDiscordDM(userId, payload) {
@@ -878,6 +958,18 @@ app.delete('/api/admin/tasks/:id', ensureManager, async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/partners', async (req, res) => {
+  try {
+    const list = await Promise.all(PARTNERS.map(fetchPartnerData));
+    res.json(list);
+  } catch (err) {
+    console.error('Partners endpoint error:', err.message);
+    res.status(500).json({ error: 'Failed to load partners' });
+  }
+});
+
+app.get('/partners', (req, res) => res.sendFile(path.join(__dirname, 'partners.html')));
+
 app.get('/landing', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/games', (req, res) => res.sendFile(path.join(__dirname, 'games.html')));
 app.get('/team', (req, res) => res.sendFile(path.join(__dirname, 'team.html')));
@@ -905,6 +997,7 @@ app.use((req, res, next) => {
       '/games': '/games',
       '/team': '/team',
       '/careers': '/careers',
+      '/partners': '/partners',
       '/company-policy': '/company-policy',
       '/staff-application': '/staff-application',
       '/staff-application-success': '/staff-application/success',

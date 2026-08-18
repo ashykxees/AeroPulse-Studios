@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Our Games | AeroPulse Studios</title>
-  <meta name="description" content="Games by AeroPulse Studios.">
+  <title>Official Partners | AeroPulse Studios</title>
+  <meta name="description" content="Official partners of AeroPulse Studios.">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -17,9 +17,9 @@
       <nav>
         <ul class="nav-links">
           <li><a href="/landing">Home</a></li>
-          <li><a href="/games" class="active">Games</a></li>
+          <li><a href="/games">Games</a></li>
           <li><a href="/team">Team</a></li>
-          <li><a href="/partners">Partners</a></li>
+          <li><a href="/partners" class="active">Partners</a></li>
           <li><a href="/careers">Careers</a></li>
           <li><a href="/dashboard">Dashboard</a></li>
         </ul>
@@ -41,30 +41,16 @@
     <section class="hero" style="min-height: 45vh; padding-top: 140px;">
       <div class="hero-bg" style="background: radial-gradient(circle at 50% 40%, rgba(34, 211, 238, 0.08), transparent 45%), linear-gradient(180deg, rgba(10, 10, 11, 0.4), var(--bg));"></div>
       <div class="container">
-        <span class="hero-label">Our Games</span>
-        <h1 class="display">The next <span>empire</span> is loading.</h1>
-        <p style="max-width: 560px; color: var(--text-muted); font-size: 1.1rem;">One world at a time. The first title is on the horizon.</p>
+        <span class="hero-label">Official Partners</span>
+        <h1 class="display">Collaborators & <span>friends.</span></h1>
+        <p style="max-width: 560px; color: var(--text-muted); font-size: 1.1rem;">Trusted communities and creators we proudly work alongside.</p>
       </div>
     </section>
 
     <section class="section" style="padding-top: 20px; padding-bottom: 120px;">
       <div class="container" style="max-width: 900px;">
-        <div class="teaser-card">
-          <div class="teaser-image-wrap">
-            <img src="images/dj-empire.jpg" alt="DJ Empire teaser" class="teaser-image">
-            <div class="teaser-overlay">
-              <span class="teaser-badge">Coming Soon</span>
-              <h2 class="teaser-title display">DJ Empire</h2>
-            </div>
-          </div>
-          <div class="teaser-body">
-            <p class="teaser-desc">Build your own nightclub empire, book DJs, throw sold-out events and climb the ranks of the music world. The dance floor belongs to you.</p>
-            <div class="teaser-meta">
-              <span>Genre: Simulation / Tycoon</span>
-              <span>Platform: Roblox</span>
-              <span>Status: In Development</span>
-            </div>
-          </div>
+        <div class="partners-grid" id="partnersGrid">
+          <p style="color: var(--text-muted); text-align: center; grid-column: 1 / -1;">Loading partners...</p>
         </div>
       </div>
     </section>
@@ -96,7 +82,6 @@
             <li><a href="/dashboard">Dashboard</a></li>
           </ul>
         </div>
-
         <div>
           <h4>Connect</h4>
           <ul>
@@ -114,5 +99,63 @@
   </footer>
 
   <script src="js/main.js"></script>
+  <script>
+    function formatCount(n) {
+      if (n === null || n === undefined || n === '') return '';
+      return Number(n).toLocaleString();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function renderPartners(partners) {
+      const grid = document.getElementById('partnersGrid');
+      if (!partners || !partners.length) {
+        grid.innerHTML = '<p style="color: var(--text-muted); text-align: center; grid-column: 1 / -1;">No partners configured.</p>';
+        return;
+      }
+
+      grid.innerHTML = partners.map(p => {
+        const meta = p.members != null
+          ? `<p class="partner-meta">${formatCount(p.online)} online &middot; ${formatCount(p.members)} members</p>`
+          : '';
+        const iconUrl = p.iconUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=0ea5e9&color=fff&size=256`;
+
+        if (p.inviteUrl) {
+          return `
+            <a href="${escapeHtml(p.inviteUrl)}" target="_blank" rel="noopener" class="team-card partner-card">
+              <img src="${escapeHtml(iconUrl)}" alt="${escapeHtml(p.name)} icon" class="team-avatar partner-icon" loading="lazy">
+              <h3 class="team-name">${escapeHtml(p.name)}</h3>
+              ${meta}
+              <span class="btn btn-primary" style="margin-top: 8px; padding: 10px 18px; font-size: 0.85rem;">Join Server</span>
+            </a>
+          `;
+        }
+
+        return `
+          <div class="team-card partner-card" aria-disabled="true">
+            <img src="${escapeHtml(iconUrl)}" alt="${escapeHtml(p.name)} icon" class="team-avatar partner-icon" loading="lazy">
+            <h3 class="team-name">${escapeHtml(p.name)}</h3>
+            ${meta}
+            <p class="partner-note">Invite link not available</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    fetch('/api/partners')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) renderPartners(data);
+        else throw new Error('Unexpected response');
+      })
+      .catch(err => {
+        console.error('Failed to load partners:', err);
+        document.getElementById('partnersGrid').innerHTML = '<p style="color: #f87171; text-align: center; grid-column: 1 / -1;">Could not load partners. Try again later.</p>';
+      });
+  </script>
 </body>
 </html>
