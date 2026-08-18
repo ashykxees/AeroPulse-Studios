@@ -21,8 +21,8 @@ const WHITELIST_TEMPLATE = path.join(__dirname, 'whitelist.json');
 
 const discordUserCache = new Map();
 const PARTNERS = [
-  { id: '1324700515585491036', name: 'Jackitech' },
-  { id: '1472286191045967985', name: 'Nate\'s Commissions' }
+  { id: '1324700515585491036', name: 'Jackitech', inviteCode: 'sh56DvQ8eF' },
+  { id: '1472286191045967985', name: 'Nate\'s Commissions', inviteCode: 'RugtdeeXdA' }
 ];
 let state = null;
 let pool = null;
@@ -139,10 +139,9 @@ function getBotToken() {
 }
 
 function getPartnerInviteCode(partner) {
-  const envName = `PARTNER_${partner.id}_INVITE`;
-  const envValue = process.env[envName];
-  if (!envValue) return null;
-  return envValue.replace(/^https?:\/\/discord\.(gg|com)\/invite\//, '').replace(/\/$/, '');
+  const raw = partner.inviteCode || process.env[`PARTNER_${partner.id}_INVITE`];
+  if (!raw) return null;
+  return raw.replace(/^https?:\/\/discord\.(gg|com)\/invite\//, '').replace(/\/$/, '');
 }
 
 function getPartnerIconUrl(name) {
