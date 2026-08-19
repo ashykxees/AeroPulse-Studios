@@ -22,7 +22,7 @@ const WHITELIST_TEMPLATE = path.join(__dirname, 'whitelist.json');
 const discordUserCache = new Map();
 const PARTNERS = [
   { id: '1324700515585491036', name: 'Jackitech', inviteCode: 'sh56DvQ8eF' },
-  { id: '1472286191045967985', name: 'Nate\'s Commissions', inviteCode: 'RugtdeeXdA' }
+  { id: '1472286191045967985', name: 'Nate\'s Services', inviteCode: 'WQqwy6swx7' }
 ];
 let state = null;
 let pool = null;
